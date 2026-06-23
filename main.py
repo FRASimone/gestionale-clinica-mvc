@@ -2,6 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from views.login_view import LoginWindow
 
+
 def main():
     # Inizializza l'applicazione PyQt
     app = QApplication(sys.argv)
