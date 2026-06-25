@@ -1,0 +1,145 @@
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox, 
+                             QDateEdit, QPushButton, QTableWidget, QTableWidgetItem, 
+                             QHeaderView, QLabel, QMessageBox)
+from PyQt6.QtCore import QDate, Qt
+from datetime import date
+
+from controllers.gestore_clinica import GestoreClinica
+from views.valutazione_funzionale_view import ValutazioneFunzionaleView
+
+class AgendaMedicoView(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.gestore_clinica = GestoreClinica()
+        
+        self.setWindowTitle("Agenda Appuntamenti Medico")
+        self.resize(600, 400)
+        
+        self._build_ui()
+        self._popola_medici()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+
+        # --- SEZIONE SUPERIORE: Filtri di ricerca ---
+        filtri_layout = QHBoxLayout()
+        
+        filtri_layout.addWidget(QLabel("Seleziona Medico:"))
+        self.combo_medico = QComboBox()
+        filtri_layout.addWidget(self.combo_medico)
+
+        filtri_layout.addWidget(QLabel("Data:"))
+        self.input_data = QDateEdit()
+        self.input_data.setCalendarPopup(True)
+        self.input_data.setDate(QDate.currentDate()) # Di default mostra oggi
+        filtri_layout.addWidget(self.input_data)
+
+        btn_cerca = QPushButton("Carica Agenda")
+        btn_cerca.clicked.connect(self.carica_appuntamenti)
+        filtri_layout.addWidget(btn_cerca)
+
+        layout.addLayout(filtri_layout)
+
+        # --- SEZIONE INFERIORE: Tabella Risultati ---
+        self.tabella = QTableWidget()
+        self.tabella.setColumnCount(5)
+        self.tabella.setHorizontalHeaderLabels(["ID", "Orario", "Paziente", "Prestazione", "Stato"])
+        
+        self.tabella.hideColumn(0) # <-- NASCONDIAMO LA COLONNA ID ALL'UTENTE
+        
+        # Facciamo in modo che le colonne si allarghino per riempire lo spazio
+        header = self.tabella.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # La tabella deve essere in sola lettura (non si modifica scrivendo nelle celle)
+        self.tabella.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+
+        layout.addWidget(self.tabella)
+        
+        # --- NUOVO BOTTONE SOTTO LA TABELLA APPUNTAMENTI---
+        self.btn_avvia_visita = QPushButton("Avvia Visita (Compila Referto)")
+        self.btn_avvia_visita.setStyleSheet("background-color: #27AE60; color: white; font-weight: bold; padding: 10px;")
+        self.btn_avvia_visita.clicked.connect(self.apri_valutazione)
+        layout.addWidget(self.btn_avvia_visita)
+
+    def _popola_medici(self):
+        """Metodo di supporto per riempire la tendina dei medici (Simula il Login)."""
+        medici = self.gestore_clinica.getTuttiMedici()
+        for medico in medici:
+            testo = f"Dott. {medico['nome']} {medico['cognome']}"
+            self.combo_medico.addItem(testo, medico['id'])
+
+    def carica_appuntamenti(self):
+        """Chiama il Controller e riempie la tabella con i risultati."""
+        id_medico = self.combo_medico.currentData()
+        if not id_medico:
+            QMessageBox.warning(self, "Attenzione", "Nessun medico selezionato.")
+            return
+
+        # Estraiamo la data e la convertiamo nell'oggetto Python "date" come richiesto dall'UML
+        qdata = self.input_data.date()
+        data_obj = date(qdata.year(), qdata.month(), qdata.day())
+
+        # CHIAMATA AL CONTROLLER
+        appuntamenti = self.gestore_clinica.getAgendaMedico(id_medico, data_obj)
+
+        # Puliamo la tabella prima di inserire i nuovi dati
+        self.tabella.setRowCount(0)
+
+        if not appuntamenti:
+            # Se la lista è vuota, usciamo 
+            return
+
+       # Riempiamo la tabella riga per riga
+        for riga, app in enumerate(appuntamenti):
+            self.tabella.insertRow(riga)
+            
+            # Creiamo una stringa unica unendo Nome, Cognome e CF
+            paziente_completo = f"{app['nome_paziente']} {app['cognome_paziente']} ({app['cf_paziente']})"
+            
+            # Creiamo gli elementi della tabella (QTableWidgetItem accetta solo testo)
+            item_id = QTableWidgetItem(str(app['id_appuntamento'])) # Creiamo l'item per l'ID
+            item_orario = QTableWidgetItem(str(app['oraInizio']))
+            item_paziente = QTableWidgetItem(paziente_completo)
+            item_prestazione = QTableWidgetItem(str(app['nomePrestazione'])) # <-- Qui abbiamo risolto il KeyError
+            item_stato = QTableWidgetItem(str(app['stato']))
+
+            # Inseriamo gli elementi nelle rispettive colonne
+            self.tabella.setItem(riga, 0, item_id)
+            self.tabella.setItem(riga, 1, item_orario)
+            self.tabella.setItem(riga, 2, item_paziente)
+            self.tabella.setItem(riga, 3, item_prestazione)
+            self.tabella.setItem(riga, 4, item_stato)
+        
+    def apri_valutazione(self):
+        """Legge la riga selezionata e apre la finestra di refertazione."""
+        riga_selezionata = self.tabella.currentRow()
+        
+        # Controllo 1: L'utente ha selezionato qualcosa?
+        if riga_selezionata < 0:
+            QMessageBox.warning(self, "Attenzione", "Seleziona un paziente dall'agenda per avviare la visita.")
+            return
+            
+        # Controllo 2: La visita è già stata fatta? (Leggiamo la colonna 4 "Stato")
+        stato = self.tabella.item(riga_selezionata, 4).text()
+        if stato == "Completato":
+            QMessageBox.information(self, "Info", "Questa visita è già stata refertata e completata.")
+            return
+
+        # Estraiamo l'ID nascosto dalla colonna 0
+        id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
+        
+        # Apriamo la finestra passandole l'ID!
+        self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato)
+        self.finestra_visita.show()
+
+
+
+# --- TEST DIRETTO DELLA VIEW ---
+if __name__ == "__main__":
+    import sys
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    finestra = AgendaMedicoView()
+    finestra.show()
+    sys.exit(app.exec())

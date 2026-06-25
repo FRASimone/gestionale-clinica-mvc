@@ -157,7 +157,25 @@ class GestoreClinica:
         cursor = conn.cursor()
         
         # Passiamo la stringa data_str alla query SQL
-        cursor.execute("SELECT * FROM Appuntamento WHERE id_medico = ? AND data = ?", (idMedico, data_str))
+        query = """
+            SELECT 
+                A.id AS id_appuntamento, 
+                A.oraInizio, 
+                A.stato,
+                A.oraInizio, 
+                A.stato, 
+                P.nome AS nome_paziente, 
+                P.cognome AS cognome_paziente,
+                P.cf AS cf_paziente,
+                Pr.nomePrestazione
+            FROM Appuntamento A
+            JOIN Paziente P ON A.cf_paziente = P.cf
+            JOIN Prestazione Pr ON A.id_prestazione = Pr.id
+            WHERE A.id_medico = ? AND A.data = ?
+            ORDER BY A.oraInizio ASC
+        """
+        
+        cursor.execute(query, (idMedico, data_str))
         rows = cursor.fetchall()
         conn.close()
         
