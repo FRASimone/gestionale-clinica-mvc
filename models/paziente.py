@@ -23,7 +23,16 @@ class Paziente:
             "telefono": self.__telefono,
             "isAgonista": self.__is_agonista
         }
+        
+    def getCartellaClinica(self):
+        return self.__cartellaClinica
+    
+    def setCartellaClinica(self, cartella) -> None:
+        self.__cartellaClinica = cartella
 
+    def getListaFatture(self) -> list:
+        return self.__listaFatture
+    
     def aggiornaDati(self, nuovi_dati: dict) -> bool:
         """Aggiorna lo stato interno dell'oggetto."""
         try:

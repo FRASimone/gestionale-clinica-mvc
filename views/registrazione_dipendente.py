@@ -78,12 +78,3 @@ class RegistrazioneDipendenteView(QWidget):
             self.input_password.clear()
         else:
             QMessageBox.warning(self, "Errore di Registrazione", messaggio)
-
-# --- TRUCCO PER TESTARE SUBITO QUESTA FINESTRA ---
-if __name__ == "__main__":
-    import sys
-    from PyQt6.QtWidgets import QApplication
-    app = QApplication(sys.argv)
-    finestra = RegistrazioneDipendenteView()
-    finestra.show()
-    sys.exit(app.exec())
