@@ -130,16 +130,16 @@ class GestoreAnagrafica:
         return risultati # Restituisce una lista di oggetti Paziente
 
     def modificaSchedaPaziente(self, cf, nuovi_dati: dict):
-        """Aggiorna i contatti di un paziente esistente."""
-        if "email" not in nuovi_dati or "telefono" not in nuovi_dati:
+        """Aggiorna i contatti e lo stato agonistico di un paziente esistente."""
+        if "email" not in nuovi_dati or "telefono" not in nuovi_dati or "isAgonista" not in nuovi_dati:
             return False
             
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE Paziente SET email = ?, telefono = ? WHERE cf = ?",
-                (nuovi_dati["email"], nuovi_dati["telefono"], cf)
+                "UPDATE Paziente SET email = ?, telefono = ?, isAgonista = ? WHERE cf = ?",
+                (nuovi_dati["email"], nuovi_dati["telefono"], int(nuovi_dati["isAgonista"]), cf)
             )
             conn.commit()
             righe_aggiornate = cursor.rowcount

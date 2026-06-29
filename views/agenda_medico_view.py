@@ -6,6 +6,7 @@ from datetime import date
 
 from controllers.gestore_clinica import GestoreClinica
 from views.valutazione_funzionale_view import ValutazioneFunzionaleView
+from views.scheda_paziente_view import SchedaPazienteView
 
 class AgendaMedicoView(QWidget):
     def __init__(self):
@@ -42,11 +43,11 @@ class AgendaMedicoView(QWidget):
 
         # --- SEZIONE INFERIORE: Tabella Risultati ---
         self.tabella = QTableWidget()
-        self.tabella.setColumnCount(5)
-        self.tabella.setHorizontalHeaderLabels(["ID", "Orario", "Paziente", "Prestazione", "Stato"])
+        self.tabella.setColumnCount(6)
+        self.tabella.setHorizontalHeaderLabels(["ID", "Orario", "Paziente", "Prestazione", "Stato", "CF"])
         
         self.tabella.hideColumn(0) # <-- NASCONDIAMO LA COLONNA ID ALL'UTENTE
-        
+        self.tabella.hideColumn(5) # Nascondi CF
         # Facciamo in modo che le colonne si allarghino per riempire lo spazio
         header = self.tabella.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -61,6 +62,11 @@ class AgendaMedicoView(QWidget):
         self.btn_avvia_visita.setStyleSheet("background-color: #27AE60; color: white; font-weight: bold; padding: 10px;")
         self.btn_avvia_visita.clicked.connect(self.apri_valutazione)
         layout.addWidget(self.btn_avvia_visita)
+        
+        self.btn_cartella_clinica = QPushButton("Visualizza Cartella Clinica")
+        self.btn_cartella_clinica.setStyleSheet("background-color: #3498DB; color: white; font-weight: bold; padding: 10px;")
+        self.btn_cartella_clinica.clicked.connect(self.apri_scheda_medico)
+        layout.addWidget(self.btn_cartella_clinica)
 
     def _popola_medici(self):
         """Metodo di supporto per riempire la tendina dei medici (Simula il Login)."""
@@ -103,6 +109,7 @@ class AgendaMedicoView(QWidget):
             item_paziente = QTableWidgetItem(paziente_completo)
             item_prestazione = QTableWidgetItem(str(app['nomePrestazione'])) # <-- Qui abbiamo risolto il KeyError
             item_stato = QTableWidgetItem(str(app['stato']))
+            item_cf = QTableWidgetItem(str(app['cf_paziente']))
 
             # Inseriamo gli elementi nelle rispettive colonne
             self.tabella.setItem(riga, 0, item_id)
@@ -110,6 +117,7 @@ class AgendaMedicoView(QWidget):
             self.tabella.setItem(riga, 2, item_paziente)
             self.tabella.setItem(riga, 3, item_prestazione)
             self.tabella.setItem(riga, 4, item_stato)
+            self.tabella.setItem(riga, 5, item_cf)
         
     def apri_valutazione(self):
         """Legge la riga selezionata e apre la finestra di refertazione."""
@@ -132,7 +140,16 @@ class AgendaMedicoView(QWidget):
         # Apriamo la finestra passandole l'ID!
         self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato)
         self.finestra_visita.show()
-
+        
+    def apri_scheda_medico(self):
+        riga = self.tabella.currentRow()
+        if riga < 0:
+            QMessageBox.warning(self, "Attenzione", "Seleziona un paziente per vedere la sua cartella.")
+            return
+            
+        cf_selezionato = self.tabella.item(riga, 5).text() # Estraiamo il CF nascosto!
+        self.finestra_scheda = SchedaPazienteView(cf_paziente=cf_selezionato)
+        self.finestra_scheda.show()
 
 
 # --- TEST DIRETTO DELLA VIEW ---

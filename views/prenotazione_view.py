@@ -30,7 +30,7 @@ class PrenotazioneView(QWidget):
         self.input_data = QDateEdit()
         self.input_data.setCalendarPopup(True) # Mostra il calendarietto a tendina
         self.input_data.setDate(QDate.currentDate()) # Imposta data di oggi di default
-        
+        self.input_data.setMinimumDate(QDate.currentDate()) # Blocca le date passate
         self.input_ora = QTimeEdit()
         self.input_ora.setTime(QTime(9, 0)) # Orario di default 09:00
 

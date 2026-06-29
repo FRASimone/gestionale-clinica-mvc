@@ -112,6 +112,24 @@ class GestoreClinica:
         except sqlite3.Error as e:
             print(f"Errore creazione appuntamento: {e}")
             return False
+        
+    def getDettagliAppuntamento(self, id_appuntamento: int) -> dict:
+        """Recupera i dettagli di un singolo appuntamento per pre-compilare l'interfaccia di modifica."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        query = """
+            SELECT A.id, A.data, A.oraInizio, P.nome, P.cognome 
+            FROM Appuntamento A
+            JOIN Paziente P ON A.cf_paziente = P.cf
+            WHERE A.id = ?
+        """
+        cursor.execute(query, (id_appuntamento,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        return dict(row) if row else {}
+    
     def annullaAppuntamento(self, idAppuntamento: int) -> bool:
             """Cambia lo stato dell'appuntamento in Annullato."""
             try:
@@ -229,3 +247,26 @@ class GestoreClinica:
         for app in appuntamenti_domani:
             print(f"-> Inviato Memo per appuntamento ID: {app['id']} (Paziente: {app['cf_paziente']})")
         print("------------------------------------------------------\n")
+    
+    def getStoricoPaziente(self, cf_paziente: str) -> list:
+        """Recupera tutto lo storico delle visite di un paziente specifico (RF8)."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        
+        query = """
+            SELECT 
+                A.data, 
+                Pr.nomePrestazione, 
+                M.nome AS nome_medico, M.cognome AS cognome_medico,
+                A.stato
+            FROM Appuntamento A
+            JOIN Prestazione Pr ON A.id_prestazione = Pr.id
+            JOIN Dipendente M ON A.id_medico = M.id
+            WHERE A.cf_paziente = ?
+            ORDER BY A.data DESC, A.oraInizio DESC
+        """
+        cursor.execute(query, (cf_paziente,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [dict(row) for row in rows]

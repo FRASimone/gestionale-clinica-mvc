@@ -65,6 +65,4 @@ class Appuntamento:
         self.__valutazioniFunzionali = nuove_valutazioni
 
     def setStato(self, nuovo_stato: str) -> None:
-        if self.stato == "Completato" and nuovo_stato == "Annullato":
-            raise ValueError("Impossibile annullare una visita completata")
         self.__stato = nuovo_stato

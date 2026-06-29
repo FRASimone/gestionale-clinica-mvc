@@ -5,6 +5,8 @@ from PyQt6.QtCore import Qt
 
 # Importiamo il Controller per passargli i comandi
 from controllers.gestore_anagrafica import GestoreAnagrafica
+from views.prenotazione_view import PrenotazioneView
+from views.scheda_paziente_view import SchedaPazienteView
 
 class DashboardSegreteria(QWidget):
     def __init__(self, utente_loggato):
@@ -33,7 +35,8 @@ class DashboardSegreteria(QWidget):
         tabs = QTabWidget()
         tabs.addTab(self._tab_nuovo_paziente(), "Registra Nuovo Paziente")
         tabs.addTab(self._tab_ricerca_pazienti(), "Cerca Pazienti")
-        
+        tabs.addTab(PrenotazioneView(), "Prenota Appuntamento") 
+
         layout_principale.addWidget(tabs)
 
     # --- COSTRUZIONE DELLA PRIMA SCHEDA ---
@@ -88,6 +91,10 @@ class DashboardSegreteria(QWidget):
         self.tabella.setHorizontalHeaderLabels(["CF", "Nome", "Cognome", "Email", "Telefono", "Agonista"])
         self.tabella.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.tabella)
+        self.btn_apri_scheda = QPushButton("Apri Cartella Paziente Selezionato")
+        self.btn_apri_scheda.setStyleSheet("background-color: #9B59B6; color: white; padding: 10px;")
+        self.btn_apri_scheda.clicked.connect(self.apri_scheda_segreteria)
+        layout.addWidget(self.btn_apri_scheda)
         
         return widget
 
@@ -152,3 +159,36 @@ class DashboardSegreteria(QWidget):
             # Traduciamo il True/False in Sì/No per l'interfaccia
             agonista_str = "Sì" if dati["isAgonista"] else "No"
             self.tabella.setItem(row_idx, 5, QTableWidgetItem(agonista_str))
+    
+    def apri_scheda_segreteria(self):
+        riga = self.tabella.currentRow()
+        if riga < 0:
+            QMessageBox.warning(self, "Attenzione", "Seleziona un paziente dalla tabella.")
+            return
+            
+        cf_selezionato = self.tabella.item(riga, 0).text() # Il CF è nella colonna 0
+        self.finestra_scheda = SchedaPazienteView(cf_paziente=cf_selezionato)
+        self.finestra_scheda.show()
+            
+        # --- TEST DIRETTO DELLA VIEW ---
+if __name__ == "__main__":
+    import sys
+    from PyQt6.QtWidgets import QApplication
+            
+    # Creiamo una finta classe Dipendente solo per non far crashare la View nel test
+    class MockDipendente:
+        def __init__(self):
+            self.nome = "Mario"
+            self.cognome = "Rossi"
+            self.ruolo = "Segretario"
+                    
+        def getInfo(self):
+            return f"{self.nome} {self.cognome} ({self.ruolo})"
+
+    app = QApplication(sys.argv)
+            
+    utente_finto = MockDipendente()
+    finestra = DashboardSegreteria(utente_loggato=utente_finto)
+    finestra.show()
+            
+    sys.exit(app.exec())
