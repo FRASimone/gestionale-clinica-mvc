@@ -7,12 +7,15 @@ from PyQt6.QtCore import Qt
 from controllers.gestore_anagrafica import GestoreAnagrafica
 from views.prenotazione_view import PrenotazioneView
 from views.scheda_paziente_view import SchedaPazienteView
+from views.catalogo_prestazioni_view import CatalogoPrestazioniView
+from controllers.gestore_clinica import GestoreClinica
 
 class DashboardSegreteria(QWidget):
     def __init__(self, utente_loggato):
         super().__init__()
         self.utente_loggato = utente_loggato # Riceviamo l'oggetto del dipendente dal login
-        self.gestore = GestoreAnagrafica()   # Istanziamo il nostro "motore"
+        self.gestore = GestoreAnagrafica() # Istanziamo il nostro "motore"
+        self.gestore_clinica = GestoreClinica()
         
         self.setWindowTitle(f"Area Segreteria - {self.utente_loggato.getInfo()}")
         self.resize(800, 600)
@@ -22,22 +25,46 @@ class DashboardSegreteria(QWidget):
     def _build_ui(self):
         layout_principale = QVBoxLayout(self)
         
-        # Titolo in alto
+       # --- BARRA SUPERIORE (Titolo + Bottone Memo) ---
+        header_layout = QHBoxLayout()
+        
         titolo = QLabel("Pannello di Controllo Segreteria")
         font = titolo.font()
         font.setPointSize(16)
         font.setBold(True)
         titolo.setFont(font)
-        titolo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout_principale.addWidget(titolo)
+        header_layout.addWidget(titolo)
+        
+        header_layout.addStretch() # Spinge il bottone tutto a destra
+        
+        self.btn_memo = QPushButton("Forza Invio Memo")
+        self.btn_memo.setStyleSheet("background-color: #F1C40F; color: black; font-weight: bold; padding: 8px;")
+        self.btn_memo.clicked.connect(self.lancia_promemoria)
+        header_layout.addWidget(self.btn_memo)
+        
+        layout_principale.addLayout(header_layout)
+        # -----------------------------------------------
 
         # Sistema a Schede (Tabs)
         tabs = QTabWidget()
         tabs.addTab(self._tab_nuovo_paziente(), "Registra Nuovo Paziente")
         tabs.addTab(self._tab_ricerca_pazienti(), "Cerca Pazienti")
         tabs.addTab(PrenotazioneView(), "Prenota Appuntamento") 
+        tabs.addTab(CatalogoPrestazioniView(), "Catalogo Prestazioni")
 
         layout_principale.addWidget(tabs)
+    
+    def lancia_promemoria(self):
+        """Richiama il batch del Controller e avvisa l'utente."""
+        # Esegue il print nel terminale
+        self.gestore_clinica.inviaPromemoriaAutomatici() 
+        
+        # Mostra un pop-up per confermare che l'azione è partita
+        QMessageBox.information(
+            self, 
+            "Procedura Completata", 
+            "I promemoria per gli appuntamenti di domani sono stati elaborati.\nControlla il terminale per gli invii."
+        )
 
     # --- COSTRUZIONE DELLA PRIMA SCHEDA ---
     def _tab_nuovo_paziente(self):

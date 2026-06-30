@@ -200,6 +200,24 @@ class GestoreClinica:
         # Per ora restituiamo una lista di dizionari comoda per la View
         agenda = [dict(row) for row in rows]
         return agenda
+    
+    def aggiungiPrestazione(self, nome: str, durata: int, costo: float) -> bool:
+        """Inserisce una nuova prestazione nel catalogo (RF10)."""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "INSERT INTO Prestazione (nomePrestazione, durataMinuti, costoBase) VALUES (?, ?, ?)",
+                (nome, durata, costo)
+            )
+            
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.Error as e:
+            print(f"Errore DB in aggiungiPrestazione: {e}")
+            return False
 
     def registraValutazioneFunzionale(self, idAppuntamento: int, anomalie: str, noteAggiuntive: str, prevOvertraining: str, valutazioneClinica: int) -> bool:
         """
@@ -232,21 +250,57 @@ class GestoreClinica:
 
     def inviaPromemoriaAutomatici(self) -> None:
         """
-        Cerca gli appuntamenti di domani e simula l'invio del Memo.
+        Cerca gli appuntamenti di domani, crea il record in Memo e simula l'invio (RF16).
         Restituisce void (None in Python) come da UML.
         """
         domani = (date.today() + timedelta(days=1)).isoformat()
         
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Appuntamento WHERE data = ? AND stato = 'Programmato'", (domani,))
-        appuntamenti_domani = cursor.fetchall()
-        conn.close()
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # 1. Usiamo la JOIN per estrarre anche i contatti del paziente
+            query = """
+                SELECT A.id, A.oraInizio, P.nome, P.cognome, P.email 
+                FROM Appuntamento A
+                JOIN Paziente P ON A.cf_paziente = P.cf
+                WHERE A.data = ? AND A.stato = 'Programmato'
+            """
+            cursor.execute(query, (domani,))
+            appuntamenti_domani = cursor.fetchall()
 
-        print(f"\n--- [SISTEMA] Avvio invio promemoria per il {domani} ---")
-        for app in appuntamenti_domani:
-            print(f"-> Inviato Memo per appuntamento ID: {app['id']} (Paziente: {app['cf_paziente']})")
-        print("------------------------------------------------------\n")
+            print(f"\n--- [SISTEMA] Avvio invio promemoria per il {domani} ---")
+            
+            if not appuntamenti_domani:
+                print("Nessun appuntamento in programma per domani.")
+            
+            for app in appuntamenti_domani:
+                # 2. Generiamo il testo "al volo" solo per simulare l'email nel terminale
+                testo_memo = f"Gentile {app['nome']} {app['cognome']}, le ricordiamo la visita di domani alle ore {app['oraInizio']}."
+                
+                # 3. Inseriamo il record in Memo RISPETTANDO IL TUO UML
+                # Passiamo 'domani' come data programmata e '1' come stato (True = Inviato)
+                cursor.execute(
+                    "INSERT INTO Memo (dataInvioProgrammata, inviato) VALUES (?, ?)", 
+                    (domani, 1)
+                )
+                id_nuovo_memo = cursor.lastrowid # Recuperiamo l'ID appena generato
+                
+                # 4. Colleghiamo il Memo all'Appuntamento
+                cursor.execute(
+                    "UPDATE Appuntamento SET id_memo = ? WHERE id = ?",
+                    (id_nuovo_memo, app['id'])
+                )
+                
+                # 5. Simulazione visiva dell'invio (Il DB non sa nulla di questo testo)
+                print(f"-> Inviata Email a: {app['email']} | Testo: {testo_memo}")
+            
+            conn.commit()
+            conn.close()
+            print("------------------------------------------------------\n")
+            
+        except sqlite3.Error as e:
+            print(f"Errore DB durante l'invio dei promemoria: {e}")
     
     def getStoricoPaziente(self, cf_paziente: str) -> list:
         """Recupera tutto lo storico delle visite di un paziente specifico (RF8)."""
