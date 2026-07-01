@@ -1,11 +1,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, 
                              QLineEdit, QCheckBox, QPushButton, QLabel, 
-                             QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox)
+                             QTableWidget, QTableWidgetItem, QHeaderView, 
+                             QMessageBox, QTabWidget)
 from PyQt6.QtCore import Qt
 
 from controllers.gestore_anagrafica import GestoreAnagrafica
 from controllers.gestore_clinica import GestoreClinica
-from controllers.gestore_anagrafica import GestoreAnagrafica 
+from controllers.gestore_amministrativa import GestoreAmministrativa 
 
 class SchedaPazienteView(QWidget):
     def __init__(self, cf_paziente: str):
@@ -13,6 +14,7 @@ class SchedaPazienteView(QWidget):
         self.cf_paziente = cf_paziente
         self.gestore_anagrafica = GestoreAnagrafica()
         self.gestore_clinica = GestoreClinica()
+        self.gestore_admin = GestoreAmministrativa()
         
         self.setWindowTitle(f"Cartella Clinica - Paziente: {self.cf_paziente}")
         self.resize(750, 600)
@@ -20,6 +22,7 @@ class SchedaPazienteView(QWidget):
         self._build_ui()
         self._carica_dati_paziente()
         self._carica_storico_clinico()
+        self._carica_storico_fatture()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -53,22 +56,32 @@ class SchedaPazienteView(QWidget):
 
         layout.addLayout(form_layout)
 
-        btn_salva = QPushButton("Salva Modifiche Anagrafica (RF7)")
+        btn_salva = QPushButton("Salva Modifiche Anagrafica")
         btn_salva.setStyleSheet("background-color: #3498DB; color: white; font-weight: bold; padding: 8px;")
         btn_salva.clicked.connect(self.salva_modifiche)
         layout.addWidget(btn_salva)
 
-        # --- SEZIONE INFERIORE: Storico Clinico (RF8) ---
-        titolo_storico = QLabel("Storico Trattamenti e Valutazioni (RF8)")
+        # --- SEZIONE INFERIORE: Storico Clinico e Contabile ---
+        titolo_storico = QLabel("Storico Trattamenti e Fatturazione")
         titolo_storico.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 15px;")
         layout.addWidget(titolo_storico)
-
+        tabs_storico = QTabWidget()
+        # 1. Tabella Storico Medico
         self.tabella_storico = QTableWidget()
         self.tabella_storico.setColumnCount(4)
         self.tabella_storico.setHorizontalHeaderLabels(["Data", "Prestazione", "Medico", "Referto/Stato"])
         self.tabella_storico.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tabella_storico.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.tabella_storico)
+        # 2. Tabella Storico Fatture 
+        self.tabella_fatture = QTableWidget()
+        self.tabella_fatture.setColumnCount(3)
+        self.tabella_fatture.setHorizontalHeaderLabels(["N° Fattura", "Data Emissione", "Totale (€)"])
+        self.tabella_fatture.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tabella_fatture.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        tabs_storico.addTab(self.tabella_fatture, "Storico Fatture")
+        layout.addWidget(tabs_storico)
+        
 
     def _carica_dati_paziente(self):
         """Richiede al controller i dati attuali per pre-compilare il form."""
@@ -100,7 +113,23 @@ class SchedaPazienteView(QWidget):
             self.tabella_storico.setItem(riga, 1, QTableWidgetItem(str(visita['nomePrestazione'])))
             self.tabella_storico.setItem(riga, 2, QTableWidgetItem(medico_completo))
             self.tabella_storico.setItem(riga, 3, QTableWidgetItem(str(visita['stato'])))
-
+    
+    def _carica_storico_fatture(self):
+        """Richiede al controller tutte le fatture emesse per il paziente."""
+        fatture = self.gestore_admin.getStoricoFatturePaziente(self.cf_paziente)
+        
+        self.tabella_fatture.setRowCount(0)
+        
+        for riga, fattura in enumerate(fatture):
+            self.tabella_fatture.insertRow(riga)
+            
+            # Formattiamo il totale per avere sempre due decimali
+            totale_formattato = f"{fattura['totale']:.2f} €"
+            
+            self.tabella_fatture.setItem(riga, 0, QTableWidgetItem(str(fattura['numeroFattura'])))
+            self.tabella_fatture.setItem(riga, 1, QTableWidgetItem(str(fattura['dataOraEmissione'])))
+            self.tabella_fatture.setItem(riga, 2, QTableWidgetItem(totale_formattato))
+    
     def salva_modifiche(self):
         """Invia i nuovi dati al controller per fare l'UPDATE (RF7)."""
         nuovi_dati = {

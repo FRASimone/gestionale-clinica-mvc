@@ -9,6 +9,7 @@ from views.prenotazione_view import PrenotazioneView
 from views.scheda_paziente_view import SchedaPazienteView
 from views.catalogo_prestazioni_view import CatalogoPrestazioniView
 from controllers.gestore_clinica import GestoreClinica
+from views.gestione_amministrativa_view import GestioneAmministrativaView
 
 class DashboardSegreteria(QWidget):
     def __init__(self, utente_loggato):
@@ -51,6 +52,7 @@ class DashboardSegreteria(QWidget):
         tabs.addTab(self._tab_ricerca_pazienti(), "Cerca Pazienti")
         tabs.addTab(PrenotazioneView(), "Prenota Appuntamento") 
         tabs.addTab(CatalogoPrestazioniView(), "Catalogo Prestazioni")
+        tabs.addTab(GestioneAmministrativaView(), "Cassa e Fatturazione")
 
         layout_principale.addWidget(tabs)
     

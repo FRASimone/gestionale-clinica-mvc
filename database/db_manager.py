@@ -101,6 +101,30 @@ def inizializza_database():
             FOREIGN KEY (id_valutazione) REFERENCES ValutazioneFunzionale(id)
         )
     ''')
+   # Creazione Tabella Pagamento
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Pagamento (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            appuntamento_id INTEGER NOT NULL UNIQUE, 
+            dataOraPagamento TEXT NOT NULL,
+            importo REAL NOT NULL,
+            metodo TEXT NOT NULL, 
+            FOREIGN KEY (appuntamento_id) REFERENCES Appuntamento(id)
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Fattura (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pagamento_id INTEGER NOT NULL UNIQUE, 
+            cf_paziente TEXT NOT NULL,
+            numeroFattura TEXT NOT NULL UNIQUE,
+            dataOraEmissione TEXT NOT NULL,
+            totale REAL NOT NULL,
+            FOREIGN KEY (pagamento_id) REFERENCES Pagamento(id),
+            FOREIGN KEY (cf_paziente) REFERENCES Paziente(cf)
+        )
+    ''')
 
     conn.commit()
     conn.close()
