@@ -52,6 +52,25 @@ def popola_database(db_path="database/clinica.db"):
                 )
         else:
             print("  (Prestazioni già presenti, salto l'inserimento)")
+            
+        # --- 3. INSERIMENTO SPECIALIZZAZIONI ---
+        specializzazioni_base = [
+            ("Cardiologia", "Malattie del cuore e vasi sanguigni"),
+            ("Ortopedia", "Sistema muscolo-scheletrico"),
+            ("Medicina dello Sport", "Prevenzione e cura per atleti"),
+            ("Neurologia", "Sistema nervoso centrale e periferico")
+        ]
+
+        print("- Inserimento Specializzazioni...")
+        cursor.execute("SELECT COUNT(*) FROM Specializzazione")
+        if cursor.fetchone()[0] == 0:
+            for nome, dettagli in specializzazioni_base:
+                cursor.execute(
+                    "INSERT INTO Specializzazione (nome, dettagli) VALUES (?, ?)",
+                    (nome, dettagli)
+                )
+        else:
+            print("  (Specializzazioni già presenti, salto l'inserimento)")
 
         conn.commit()
         conn.close()

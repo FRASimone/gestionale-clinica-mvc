@@ -37,7 +37,11 @@ class Medico(Dipendente):
     
     def getAppuntamenti(self) -> list:
         return self.__appuntamenti
-    #appena aggiunto
+
+    def setSpecializzazioni(self, specializzazioni: list):
+        """Metodo di supporto per popolare la lista dal Controller"""
+        self.__specializzazioni = specializzazioni
+
     def aggiungiAppuntamento(self, appuntamento) -> None:
         """Metodo utile per popolare la lista dal Controller"""
         self.__appuntamenti.append(appuntamento)

@@ -28,6 +28,26 @@ def inizializza_database():
                 ruolo TEXT NOT NULL
             )
         ''')
+        
+        # Tabella delle Specializzazioni
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Specializzazione (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT UNIQUE NOT NULL,
+                dettagli testuali TEXT
+            )
+        ''')
+
+        # Tabella Ponte per gestire la relazione Molti-a-Molti
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Medico_Specializzazione (
+                id_medico INTEGER NOT NULL,
+                id_specializzazione INTEGER NOT NULL,
+                PRIMARY KEY (id_medico, id_specializzazione),
+                FOREIGN KEY (id_medico) REFERENCES Dipendente(id),
+                FOREIGN KEY (id_specializzazione) REFERENCES Specializzazione(id)
+            )
+        ''')
 
         # Creazione Tabella Paziente
         cursor.execute('''

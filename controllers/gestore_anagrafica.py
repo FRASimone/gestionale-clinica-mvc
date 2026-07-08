@@ -45,6 +45,34 @@ class GestoreAnagrafica:
             return False, "Errore: Questa email è già presente nel sistema."
         except Exception as e:
             return False, f"Errore del database: {str(e)}"
+    
+    def assegnaSpecializzazione(self, idMedico: int, idSpecializzazione: int) -> bool:
+        """
+        Associa una specializzazione a un medico esistente nel database.
+        Riflette la relazione Molti-a-Molti dell'UML.
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Inseriamo il collegamento nella tabella ponte
+            cursor.execute(
+                "INSERT INTO Medico_Specializzazione (id_medico, id_specializzazione) VALUES (?, ?)",
+                (idMedico, idSpecializzazione)
+            )
+            conn.commit()
+            conn.close()
+            
+            print(f"--- [SISTEMA] Specializzazione {idSpecializzazione} assegnata al Medico {idMedico} ---")
+            return True
+            
+        except sqlite3.IntegrityError:
+            # Scatta se proviamo ad assegnare la stessa specializzazione due volte allo stesso medico
+            print("Avviso: Il medico possiede già questa specializzazione.")
+            return False
+        except Exception as e:
+            print(f"Errore DB in assegnaSpecializzazione: {e}")
+            return False
 
     def login(self, email, password, ruolo):
         """
@@ -148,3 +176,21 @@ class GestoreAnagrafica:
         except Exception as e:
             print(f"Errore DB in modificaScheda: {e}")
             return False
+    
+    def getTutteSpecializzazioni(self) -> list:
+        """Recupera tutte le specializzazioni dal DB per popolare la UI."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nome FROM Specializzazione")
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"id": row["id"], "nome": row["nome"]} for row in rows]
+    
+    def getDipendenteByEmail(self, email: str) -> int:
+        """Recupera l'ID di un dipendente appena registrato tramite la sua email."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM Dipendente WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        conn.close()
+        return row["id"] if row else -1

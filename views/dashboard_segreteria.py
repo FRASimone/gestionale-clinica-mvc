@@ -37,11 +37,17 @@ class DashboardSegreteria(QWidget):
         header_layout.addWidget(titolo)
         
         header_layout.addStretch() # Spinge il bottone tutto a destra
-        
+        # Bottone dei Promemoria
         self.btn_memo = QPushButton("Forza Invio Memo")
         self.btn_memo.setStyleSheet("background-color: #F1C40F; color: black; font-weight: bold; padding: 8px;")
         self.btn_memo.clicked.connect(self.lancia_promemoria)
         header_layout.addWidget(self.btn_memo)
+        
+        # BOTTONE DISCONNETTI 
+        self.btn_logout = QPushButton("Disconnetti")
+        self.btn_logout.setStyleSheet("background-color: #7F8C8D; color: white; padding: 8px 15px; font-weight: bold;")
+        self.btn_logout.clicked.connect(self.esegui_logout)
+        header_layout.addWidget(self.btn_logout)
         
         layout_principale.addLayout(header_layout)
         # -----------------------------------------------
@@ -67,6 +73,18 @@ class DashboardSegreteria(QWidget):
             "Procedura Completata", 
             "I promemoria per gli appuntamenti di domani sono stati elaborati.\nControlla il terminale per gli invii."
         )
+    def esegui_logout(self):
+        """Gestisce l'uscita dalla sessione e la chiusura della dashboard."""
+        risposta = QMessageBox.question(
+            self, 
+            "Conferma Disconnessione", 
+            "Sei sicuro di voler uscire dal pannello di segreteria?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if risposta == QMessageBox.StandardButton.Yes:
+            self.close()
+            print(f"--- [SISTEMA] Disconnessione effettuata per: {self.utente_loggato.getInfo()} ---")
 
     # --- COSTRUZIONE DELLA PRIMA SCHEDA ---
     def _tab_nuovo_paziente(self):
