@@ -11,7 +11,13 @@ class Dipendente:
     # --- Getters ---
     def getId(self) -> int:
         return self.__id
-
+    
+    def getNome(self) -> str:
+        return self.__nome
+        
+    def getCognome(self) -> str:
+        return self.__cognome
+    
     def getInfo(self) -> str:
         return f"{self.__nome} {self.__cognome} ({self.__ruolo})"
 

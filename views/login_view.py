@@ -4,6 +4,9 @@ from PyQt6.QtCore import Qt
 
 # Importiamo il controller
 from controllers.gestore_anagrafica import GestoreAnagrafica
+from views.dashboard_segreteria import DashboardSegreteria
+from views.dashboard_medico import DashboardMedico
+from views.dashboard_amministratore import DashboardAmministratore
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -60,25 +63,38 @@ class LoginWindow(QWidget):
         layout.addWidget(self.btn_recupero)
 
     def handle_login_click(self):
-        """Scatta al click su Accedi e passa i dati al Controller."""
+        """Scatta al click su Accedi e smista l'utente nella dashboard corretta."""
         email = self.input_email.text().strip()
         password = self.input_password.text().strip()
         ruolo = self.combo_ruolo.currentText()
-        # Controllo base prima di passarlo al Controller
+        
         if not email or not password:
             QMessageBox.warning(self, "Errore", "Per favore, compila tutti i campi.")
             return
 
-
-        # La View chiede al Controller di fare il lavoro
+        # La View chiede al Controller di verificare le credenziali
         utente_loggato = self.gestore.login(email, password, ruolo)
 
         if utente_loggato:
-            # Il login ha funzionato, il Controller ha restituito l'oggetto (es. un Medico).
-            # Usiamo il metodo polimorfico getInfo() del Model per salutarlo.
             QMessageBox.information(self, "Successo", f"Accesso effettuato!\nBenvenuto: {utente_loggato.getInfo()}")
             
-            # Qui in futuro chiuderemo questa finestra e apriremo la dashboard corrispondente
+            # --- ROUTING: APRIAMO LA DASHBOARD CORRETTA ---
+            if ruolo == "Medico":
+                # Passiamo l'ID e il cognome usando i getter appena creati
+                self.dashboard = DashboardMedico(id_medico=utente_loggato.getId(), nome_medico=utente_loggato.getCognome())
+            
+            elif ruolo == "Segretario":
+                # La segreteria si aspetta l'intero oggetto loggato
+                self.dashboard = DashboardSegreteria(utente_loggato=utente_loggato)
+            
+            elif ruolo == "Amministratore":
+                # Costruiamo la stringa unendo i due getter
+                nome_completo = f"{utente_loggato.getNome()} {utente_loggato.getCognome()}"
+                self.dashboard = DashboardAmministratore(nome_admin=nome_completo)
+
+            self.dashboard.show() # Mostra la nuova dashboard
+            self.close()          # Chiude la finestra di login
+            
         else:
             QMessageBox.critical(self, "Errore di Autenticazione", "Email, password o ruolo non corretti.")
 
