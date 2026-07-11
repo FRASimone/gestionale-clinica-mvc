@@ -169,6 +169,24 @@ class GestoreReportistica:
         conn.commit()
         conn.close()
         return report
+    
+    def generaReportMensiliAutomatici(self, anno: int, mese: int) -> bool:
+        """
+        Simula l'attore 'Tempo' dell'UML. 
+        Esegue la generazione batch di tutti i report per il periodo indicato.
+        """
+        try:
+            self.generaReportPazienti(anno, mese)
+            self.generaReportFatturatoGlobale(anno, mese)
+            self.generaReportFatturatoPrestazione(anno, mese)
+            self.generaReportFatturatoMedico(anno, mese)
+            self.generaReportStatisticoPrestazioni(anno, mese)
+            
+            print(f"--- [SISTEMA] Generazione automatica report completata per {mese}/{anno} ---")
+            return True
+        except Exception as e:
+            print(f"Errore durante la generazione batch dei report: {e}")
+            return False
 
     # --- METODI DI VISUALIZZAZIONE ED ESPORTAZIONE ---
 

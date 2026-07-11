@@ -15,41 +15,39 @@ class ReportisticaView(QWidget):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        # --- SEZIONE SUPERIORE: Generazione Nuovi Report ---
-        group_genera = QGroupBox("Generazione Nuovo Report")
-        layout_genera = QHBoxLayout()
+        # --- SEZIONE 1: Simulazione Attore TEMPO (Sostituisce la generazione manuale) ---
+        group_tempo = QGroupBox("Simulazione Sistema (Trigger Automatico: Attore TEMPO)")
+        # Lilla chiaro ad alto contrasto per un'ottima leggibilità sul grigio scuro
+        group_tempo.setStyleSheet("QGroupBox { font-weight: bold; color: #D7BDE2; }") 
+        layout_tempo = QHBoxLayout()
 
-        self.combo_tipo_genera = QComboBox()
-        self.combo_tipo_genera.addItems([
-            "Pazienti", "Fatturato Globale", "Fatturato Prestazione", 
-            "Fatturato Medico", "Statistico Prestazioni"
-        ])
-        layout_genera.addWidget(QLabel("Tipo:"))
-        layout_genera.addWidget(self.combo_tipo_genera)
+        lbl_info = QLabel("Simula lo scatto temporale per generare i 5 report in background:")
+        layout_tempo.addWidget(lbl_info)
 
-        self.spin_anno_genera = QSpinBox()
-        self.spin_anno_genera.setRange(2020, 2030)
-        self.spin_anno_genera.setValue(2026)
-        layout_genera.addWidget(QLabel("Anno:"))
-        layout_genera.addWidget(self.spin_anno_genera)
-
-        self.combo_mese_genera = QComboBox()
-        self.combo_mese_genera.addItem("Tutti i mesi (Annuale)", 0)
-        for m in range(1, 13):
-            self.combo_mese_genera.addItem(f"Mese {m}", m)
-        layout_genera.addWidget(QLabel("Mese:"))
-        layout_genera.addWidget(self.combo_mese_genera)
-
-        btn_genera = QPushButton("Genera Report")
-        btn_genera.setStyleSheet("background-color: #27AE60; color: white; font-weight: bold;")
-        btn_genera.clicked.connect(self.genera_report)
-        layout_genera.addWidget(btn_genera)
+        self.spin_anno_sim = QSpinBox()
+        self.spin_anno_sim.setRange(2020, 2030)
+        self.spin_anno_sim.setValue(2026)
         
-        group_genera.setLayout(layout_genera)
-        layout.addWidget(group_genera)
+        self.combo_mese_sim = QComboBox()
+        self.combo_mese_sim.addItem("Tutti i mesi (Annuale)", 0) # <-- OPZIONE ANNUALE AGGIUNTA
+        for m in range(1, 13):
+            self.combo_mese_sim.addItem(f"Mese {m}", m)
+            
+        layout_tempo.addWidget(QLabel("Anno:"))
+        layout_tempo.addWidget(self.spin_anno_sim)
+        layout_tempo.addWidget(QLabel("Mese:"))
+        layout_tempo.addWidget(self.combo_mese_sim)
+
+        btn_simula = QPushButton("Esegui Batch Mese/Anno") # <-- TESTO BOTTONE AGGIORNATO
+        btn_simula.setStyleSheet("background-color: #8E44AD; color: white; font-weight: bold;")
+        btn_simula.clicked.connect(self.simula_scatto_tempo)
+        layout_tempo.addWidget(btn_simula)
+        
+        group_tempo.setLayout(layout_tempo)
+        layout.addWidget(group_tempo)
 
 
-        # --- SEZIONE CENTRALE: Ricerca e Filtri (RF25) ---
+        # --- SEZIONE 2: Archivio e Ricerca (Attore: Amministratore) ---
         group_ricerca = QGroupBox("Archivio Report Generati")
         layout_ricerca_main = QVBoxLayout()
         
@@ -61,8 +59,8 @@ class ReportisticaView(QWidget):
         ])
         
         self.combo_anno_filtro = QComboBox()
-        self.combo_anno_filtro.addItem("Tutti gli anni", 0) # Il testo che vede l'utente e il valore 0 che va al DB
-        for y in range(2020, 2031): # Genera gli anni dal 2020 al 2030
+        self.combo_anno_filtro.addItem("Tutti gli anni", 0) 
+        for y in range(2020, 2031):
             self.combo_anno_filtro.addItem(str(y), y)
         
         self.combo_mese_filtro = QComboBox()
@@ -94,7 +92,7 @@ class ReportisticaView(QWidget):
         group_ricerca.setLayout(layout_ricerca_main)
         layout.addWidget(group_ricerca)
 
-        # --- SEZIONE INFERIORE: Azioni (Visualizza / Esporta) ---
+        # --- SEZIONE 3: Azioni (Visualizza / Esporta) ---
         layout_azioni = QHBoxLayout()
         
         btn_visualizza = QPushButton("Visualizza Dettagli")
@@ -115,31 +113,26 @@ class ReportisticaView(QWidget):
 
     # --- METODI LOGICI ---
 
-    def genera_report(self):
-        tipo = self.combo_tipo_genera.currentText()
-        anno = self.spin_anno_genera.value()
-        mese = self.combo_mese_genera.currentData() # Recupera l'intero nascosto (0-12)
+    def simula_scatto_tempo(self):
+        """Metodo che simula l'innesco automatico dei report."""
+        anno = self.spin_anno_sim.value()
+        mese = self.combo_mese_sim.currentData()
 
-        if tipo == "Pazienti":
-            self.gestore.generaReportPazienti(anno, mese)
-        elif tipo == "Fatturato Globale":
-            self.gestore.generaReportFatturatoGlobale(anno, mese)
-        elif tipo == "Fatturato Medico":
-            self.gestore.generaReportFatturatoMedico(anno, mese)
-        elif tipo == "Fatturato Prestazione":
-            self.gestore.generaReportFatturatoPrestazione(anno, mese)
-        elif tipo == "Statistico Prestazioni":
-            self.gestore.generaReportStatisticoPrestazioni(anno, mese)
+        successo = self.gestore.generaReportMensiliAutomatici(anno, mese)
 
-        QMessageBox.information(self, "Successo", f"Report '{tipo}' generato correttamente!")
-        self.ricerca_report() # Aggiorna la tabella per mostrare il nuovo report
-
+        if successo:
+            # Testo dinamico per il pop-up
+            periodo = f"il mese {mese}/{anno}" if mese > 0 else f"l'intero anno {anno}"
+            QMessageBox.information(self, "Batch Completato", f"Il sistema ha generato in background tutti e 5 i report per {periodo}.")
+            self.ricerca_report() 
+        else:
+            QMessageBox.critical(self, "Errore", "Si è verificato un errore nell'elaborazione automatica.")
+    
     def ricerca_report(self):
         tipo = self.combo_tipo_filtro.currentText()
         anno = self.combo_anno_filtro.currentData()
         mese = self.combo_mese_filtro.currentData()
 
-        # Richiamo il metodo corretto del Controller (allineato all'UML)
         risultati = self.gestore.getListaReport(anno, mese, tipo)
         
         self.tabella_report.setRowCount(0)
@@ -165,7 +158,6 @@ class ReportisticaView(QWidget):
         
         report_data = self.gestore.visualizzaReport(id_report)
         if report_data:
-            # Formattiamo il dizionario JSON in un testo leggibile
             testo = f"--- DETTAGLI REPORT (ID {report_data['id']}) ---\n"
             testo += f"Tipo: {report_data['tipoReport']}\n"
             testo += f"Periodo: Anno {report_data['annoRiferimento']} "
