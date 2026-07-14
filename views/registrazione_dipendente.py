@@ -33,7 +33,7 @@ class RegistrazioneDipendenteView(QWidget):
         
         self.input_password = QLineEdit()
         self.input_password.setEchoMode(QLineEdit.EchoMode.Password)
-        self.input_password.setPlaceholderText("Minimo 8 caratteri")
+        self.input_password.setPlaceholderText("Minimo 8 caratteri, almeno 1 lettera e 1 numero")
 
         self.combo_ruolo = QComboBox()
         self.combo_ruolo.addItems(["Medico", "Segretario", "Amministratore"])

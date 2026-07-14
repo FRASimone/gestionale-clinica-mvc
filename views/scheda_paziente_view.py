@@ -8,6 +8,7 @@ from controllers.gestore_anagrafica import GestoreAnagrafica
 from controllers.gestore_clinica import GestoreClinica
 from controllers.gestore_amministrativa import GestoreAmministrativa
 from views.dettaglio_referto_dialog import DettaglioRefertoDialog
+from views.cartella_clinica_dialog import CartellaClinicaDialog
 
 class SchedaPazienteView(QWidget):
     def __init__(self, cf_paziente: str, ruolo_utente: str = ""):
@@ -18,7 +19,7 @@ class SchedaPazienteView(QWidget):
         self.gestore_clinica = GestoreClinica()
         self.gestore_admin = GestoreAmministrativa()
         
-        self.setWindowTitle(f"Cartella Clinica - Paziente: {self.cf_paziente}")
+        self.setWindowTitle(f"Scheda Paziente: {self.cf_paziente}") 
         self.resize(750, 600)
         
         self._build_ui()
@@ -29,7 +30,7 @@ class SchedaPazienteView(QWidget):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        # --- SEZIONE SUPERIORE: Dati Anagrafici (RF7) ---
+        # --- SEZIONE SUPERIORE: Dati Anagrafici ---
         titolo_dati = QLabel("Dati Anagrafici e Contatti")
         titolo_dati.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(titolo_dati)
@@ -83,6 +84,10 @@ class SchedaPazienteView(QWidget):
             self.btn_leggi_referto.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 5px;")
             self.btn_leggi_referto.clicked.connect(self.apri_dettaglio_referto)
             layout.addWidget(self.btn_leggi_referto)
+            self.btn_cartella_clinica = QPushButton("Apri Cartella Clinica (Anamnesi)")
+            self.btn_cartella_clinica.setStyleSheet("background-color: #16A085; color: white; font-weight: bold; padding: 8px;")
+            self.btn_cartella_clinica.clicked.connect(self.apri_cartella_clinica)
+            layout.addWidget(self.btn_cartella_clinica)
      
         # 2. Tabella Storico Fatture 
         self.tabella_fatture = QTableWidget()
@@ -93,7 +98,10 @@ class SchedaPazienteView(QWidget):
         tabs_storico.addTab(self.tabella_fatture, "Storico Fatture")
         layout.addWidget(tabs_storico)
         
-
+    def apri_cartella_clinica(self):
+        dialog = CartellaClinicaDialog(cf_paziente=self.cf_paziente, ruolo_utente=self.ruolo_utente, parent=self)
+        dialog.exec()
+        
     def _carica_dati_paziente(self):
         """Richiede al controller i dati attuali per pre-compilare il form."""
         # Usiamo il metodo di ricerca
@@ -172,7 +180,7 @@ class SchedaPazienteView(QWidget):
      # Estraiamo l'ID nascosto
      id_val_testo = self.tabella_storico.item(riga, 4).text()
      if id_val_testo:
-         dialog = DettaglioRefertoDialog(int(id_val_testo), self)
-         dialog.exec()
+        dialog = DettaglioRefertoDialog(int(id_val_testo), ruolo_utente=self.ruolo_utente, parent=self)
+        dialog.exec()
      else:
          QMessageBox.warning(self, "Errore", "Referto non trovato nel database.")

@@ -4,6 +4,7 @@ import random
 # Importiamo i Model appena creati
 from models.dipendente import Medico, Segretario, Amministratore
 from models.paziente import Paziente
+import re
 
 class GestoreAnagrafica:
     def __init__(self, db_path="database/clinica.db"):
@@ -17,9 +18,10 @@ class GestoreAnagrafica:
 
     def registraDipendente(self, nome, cognome, email, password, ruolo):
         """Registra un nuovo dipendente."""
-        # Controllo complessità password
         if len(password) < 8:
             return False, "Errore: La password deve contenere almeno 8 caratteri."
+        if not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
+            return False, "Errore: La password deve contenere almeno una lettera e un numero."
 
         # Simulazione invio codice OTP per verifica email
         codice_verifica = random.randint(100000, 999999)

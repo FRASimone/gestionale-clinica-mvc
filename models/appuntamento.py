@@ -46,13 +46,19 @@ class Appuntamento:
             "id": self.__id,
             "data": self.__data,
             "oraInizio": self.__oraInizio,
-            "paziente": self.__paziente, # Restituisce l'oggetto
-            "medico": self.__medico,     # Restituisce l'oggetto
+            "paziente": self.__paziente, 
+            "medico": self.__medico,    
             "prestazione": self.__prestazione,
             "stato": self.__stato,
             "memo": self.__memo,
             "valutazioneFunzionale": self.__valutazioneFunzionale
         }
+        
+    def getPaziente(self) -> Paziente:
+        return self.__paziente
+    
+    def getPrestazione(self) -> Prestazione:
+        return self.__prestazione
 
     # --- Setters per la parte clinica ---
     

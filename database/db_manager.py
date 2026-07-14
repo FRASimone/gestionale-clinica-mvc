@@ -36,7 +36,7 @@ def inizializza_database():
             CREATE TABLE IF NOT EXISTS Specializzazione (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome TEXT UNIQUE NOT NULL,
-                dettagli testuali TEXT
+                dettagli TEXT
             )
         ''')
 
@@ -135,7 +135,7 @@ def inizializza_database():
                 FOREIGN KEY (appuntamento_id) REFERENCES Appuntamento(id)
             )
         ''')
-        
+        # Creazione Tabella Fattura
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Fattura (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

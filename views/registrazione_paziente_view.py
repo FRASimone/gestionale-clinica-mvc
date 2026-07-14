@@ -53,6 +53,7 @@ class RegistrazionePazienteView(QWidget):
             QMessageBox.warning(self, "Errore", "CF, Nome e Cognome obbligatori.")
             return
             
+        #nuovo_paziente = self.gestore.aggiungiPaziente(cf, nome, cognome, email, telefono, is_agonista)
         nuovo_paziente = self.gestore.aggiungiPaziente(cf, nome, cognome, email, telefono, is_agonista)
         
         if nuovo_paziente:

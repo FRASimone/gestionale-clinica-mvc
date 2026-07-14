@@ -6,15 +6,26 @@ from models.prestazione import Prestazione
 from models.cartella_clinica import CartellaClinica
 from models.appuntamento import Appuntamento
 
+class AccessoNegatoError(Exception):
+    pass
+
+
 class GestoreClinica:
     def __init__(self, db_path="database/clinica.db"):
         self.db_path = db_path
+        
 
     def _get_connection(self):
         """Metodo privato per la connessione al database."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
+    
+    def _verifica_ruolo(self, ruolo_utente: str, ruoli_ammessi: list):
+        if ruolo_utente not in ruoli_ammessi:
+            raise AccessoNegatoError(
+                f"Operazione riservata a {ruoli_ammessi}, ruolo fornito '{ruolo_utente}'."
+            )
 
     # ==========================================
     # # --- METODI DI SERVIZIO (Non in UML ma necessari per UI/DB) ---
@@ -39,32 +50,46 @@ class GestoreClinica:
             
         return lista_prestazioni
     
-    def creaCartellaClinica(self, cf_paziente: str, anamnesi_generica: str = "") -> tuple:
-        """
-        Crea la cartella clinica per un nuovo paziente.
-        Usa la data odierna generata automaticamente da Python.
-        """
-        # Creiamo la data di oggi formattata a stringa (YYYY-MM-DD) per il database
-        data_creazione_str = date.today().isoformat()
-        
+    def aggiornaAnamnesi(self, cf_paziente: str, nuova_anamnesi: str, ruolo_utente="Medico") -> bool:
+        """Crea o aggiorna l'anamnesi del paziente (RNF10: solo Medico)."""
+        self._verifica_ruolo(ruolo_utente, ["Medico"])
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
-            
-            cursor.execute('''
-                INSERT INTO CartellaClinica (anamnesiGenerica, dataCreazione, cf_paziente)
-                VALUES (?, ?, ?)
-            ''', (anamnesi_generica, data_creazione_str, cf_paziente))
-            
+
+            cursor.execute("SELECT id FROM CartellaClinica WHERE cf_paziente = ?", (cf_paziente,))
+            esiste = cursor.fetchone()
+
+            if esiste:
+                cursor.execute(
+                    "UPDATE CartellaClinica SET anamnesiGenerica = ? WHERE cf_paziente = ?",
+                    (nuova_anamnesi, cf_paziente)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO CartellaClinica (anamnesiGenerica, dataCreazione, cf_paziente) VALUES (?, ?, ?)",
+                    (nuova_anamnesi, date.today().isoformat(), cf_paziente)
+                )
+
             conn.commit()
             conn.close()
-            return True, "Cartella Clinica generata correttamente."
-            
-        except sqlite3.IntegrityError:
-            # Ricordi l'UNIQUE che abbiamo messo sul CF? Se proviamo a creare due cartelle per lo stesso paziente, scatta questo errore.
-            return False, "Il paziente possiede già una Cartella Clinica."
+            return True
         except sqlite3.Error as e:
-            return False, f"Errore del database: {str(e)}"
+            print(f"Errore aggiornamento anamnesi: {e}")
+            return False
+        
+    def getCartellaClinica(self, cf_paziente: str, ruolo_utente="Medico") -> dict:
+        """Recupera l'anamnesi del paziente (RNF10: solo Medico)."""
+        self._verifica_ruolo(ruolo_utente, ["Medico"])
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, anamnesiGenerica, dataCreazione FROM CartellaClinica WHERE cf_paziente = ?",
+            (cf_paziente,)
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
         
     def getTuttiMedici(self) -> list:
         """Metodo di supporto per la View: recupera i medici per la tendina."""
@@ -320,11 +345,12 @@ class GestoreClinica:
             print(f"Errore DB in aggiungiPrestazione: {e}")
             return False
 
-    def registraValutazioneFunzionale(self, idAppuntamento: int, anomalie: str, noteAggiuntive: str, prevOvertraining: str, valutazioneClinica: int) -> bool:
+    def registraValutazioneFunzionale(self, idAppuntamento: int, anomalie: str, noteAggiuntive: str, prevOvertraining: str, valutazioneClinica: int, ruolo_utente="Medico") -> bool:
         """
         Crea la valutazione funzionale e la collega all'appuntamento.
         (Rispetta esattamente i parametri stringa/int del tuo UML).
         """
+        self._verifica_ruolo(ruolo_utente, ["Medico"])
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -427,8 +453,9 @@ class GestoreClinica:
         
         return [dict(row) for row in rows]
 
-    def getDettagliValutazione(self, id_valutazione: int) -> dict:
+    def getDettagliValutazione(self, id_valutazione: int, ruolo_utente="Medico") -> dict:
         """Recupera il testo del referto medico."""
+        self._verifica_ruolo(ruolo_utente, ["Medico"])
         if not id_valutazione:
             return {}
             

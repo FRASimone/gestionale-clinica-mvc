@@ -45,7 +45,7 @@ class DashboardMedico(QWidget):
         self.tabs = QTabWidget()
         
         # Istanziamo la vista dell'agenda
-        self.view_agenda = AgendaMedicoView()
+        self.view_agenda = AgendaMedicoView(ruolo_utente="Medico")
         
         # Inseriamo l'agenda come Tab principale
         self.tabs.addTab(self.view_agenda, "Agenda Appuntamenti e Visite")

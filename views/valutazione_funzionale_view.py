@@ -2,12 +2,13 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QTextEdit,
                              QSpinBox, QPushButton, QLabel, QMessageBox)
 from PyQt6.QtCore import Qt
 
-from controllers.gestore_clinica import GestoreClinica
+from controllers.gestore_clinica import AccessoNegatoError, GestoreClinica
 
 class ValutazioneFunzionaleView(QWidget):
     # Passiamo l'ID dell'appuntamento direttamente quando apriamo la finestra
-    def __init__(self, id_appuntamento: int):
+    def __init__(self, id_appuntamento: int, ruolo_utente="Medico"):
         super().__init__()
+        self.ruolo_utente = ruolo_utente
         self.gestore_clinica = GestoreClinica()
         self.id_appuntamento = id_appuntamento
         
@@ -75,10 +76,14 @@ class ValutazioneFunzionaleView(QWidget):
             QMessageBox.warning(self, "Attenzione", "Inserire almeno un'anomalia o una nota aggiuntiva.")
             return
 
-        # CHIAMATA AL CONTROLLER
-        successo = self.gestore_clinica.registraValutazioneFunzionale(
-            self.id_appuntamento, anomalie, note, overtraining, valutazione
+        try:
+            successo = self.gestore_clinica.registraValutazioneFunzionale(
+            self.id_appuntamento, anomalie, note, overtraining, valutazione,
+            ruolo_utente=self.ruolo_utente
         )
+        except AccessoNegatoError as e:
+            QMessageBox.critical(self, "Accesso Negato", str(e))
+            return
 
         if successo:
             QMessageBox.information(self, "Successo", "Valutazione salvata! L'appuntamento è ora 'Completato'.")

@@ -9,8 +9,9 @@ from views.valutazione_funzionale_view import ValutazioneFunzionaleView
 from views.scheda_paziente_view import SchedaPazienteView
 
 class AgendaMedicoView(QWidget):
-    def __init__(self):
+    def __init__(self, ruolo_utente="Medico"):
         super().__init__()
+        self.ruolo_utente = ruolo_utente
         self.gestore_clinica = GestoreClinica()
         
         self.setWindowTitle("Agenda Appuntamenti Medico")
@@ -138,7 +139,7 @@ class AgendaMedicoView(QWidget):
         id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
         
         # Apriamo la finestra passandole l'ID!
-        self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato)
+        self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato, ruolo_utente=self.ruolo_utente)
         self.finestra_visita.show()
         
     def apri_scheda_medico(self):
@@ -149,7 +150,7 @@ class AgendaMedicoView(QWidget):
             
         cf_selezionato = self.tabella.item(riga, 5).text() # Estraiamo il CF nascosto!
         self.finestra_scheda = SchedaPazienteView(cf_paziente=cf_selezionato,
-                                                  ruolo_utente="Medico")
+                                                  ruolo_utente=self.ruolo_utente)
         self.finestra_scheda.show()
 
 
