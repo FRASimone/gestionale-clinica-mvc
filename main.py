@@ -2,13 +2,16 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 # Importiamo l'inizializzatore del DB e la finestra di Login
-from database.db_manager import inizializza_database 
+from database.db_manager import inizializza_database
+from database.db_manager import esegui_backup_automatico
 from views.login_view import LoginWindow 
 def avvia_gestionale():
     print("--- [SISTEMA] Avvio Gestionale Clinica ---")
     
     # 1. Controlliamo e inizializziamo il Database per sicurezza
     inizializza_database()
+    esegui_backup_automatico()
+    
     
     # 2. Avviamo l'applicazione grafica
     app = QApplication(sys.argv)

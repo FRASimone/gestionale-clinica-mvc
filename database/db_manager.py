@@ -1,5 +1,7 @@
 import sqlite3
 import os
+import shutil
+from datetime import datetime
 
 # Definiamo il percorso assoluto in cui verrà salvato il file del database
 DB_PATH = os.path.join(os.path.dirname(__file__), 'clinica.db')
@@ -166,6 +168,21 @@ def inizializza_database():
         # Il blocco finally garantisce che la connessione venga chiusa SEMPRE,
         # sia che vada a buon fine, sia che ci sia stato un errore.
         conn.close()
+        
+#il backup funzionerà sempre, indipendentemente da dove esegui lo script.        
+def esegui_backup_automatico():
+    # Usiamo il DB_PATH assoluto
+    global DB_PATH 
+    
+    if os.path.exists(DB_PATH):
+        # Creiamo la cartella backups esattamente dove si trova il file di origine (dentro 'database')
+        backup_dir = os.path.join(os.path.dirname(DB_PATH), "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        data_str = datetime.now().strftime("%Y%m%d")
+        nome_backup = f"backup_clinica_{data_str}.db"
+        shutil.copy(DB_PATH, os.path.join(backup_dir, nome_backup))
+        print(f"--- [SISTEMA] Backup giornaliero eseguito in: {backup_dir} ---")
 
 # Se eseguiamo questo file direttamente, crea le tabelle.
 if __name__ == "__main__":

@@ -6,12 +6,14 @@ from PyQt6.QtCore import Qt
 
 from controllers.gestore_anagrafica import GestoreAnagrafica
 from controllers.gestore_clinica import GestoreClinica
-from controllers.gestore_amministrativa import GestoreAmministrativa 
+from controllers.gestore_amministrativa import GestoreAmministrativa
+from views.dettaglio_referto_dialog import DettaglioRefertoDialog
 
 class SchedaPazienteView(QWidget):
-    def __init__(self, cf_paziente: str):
+    def __init__(self, cf_paziente: str, ruolo_utente: str = ""):
         super().__init__()
         self.cf_paziente = cf_paziente
+        self.ruolo_utente = ruolo_utente
         self.gestore_anagrafica = GestoreAnagrafica()
         self.gestore_clinica = GestoreClinica()
         self.gestore_admin = GestoreAmministrativa()
@@ -68,11 +70,20 @@ class SchedaPazienteView(QWidget):
         tabs_storico = QTabWidget()
         # 1. Tabella Storico Medico
         self.tabella_storico = QTableWidget()
-        self.tabella_storico.setColumnCount(4)
-        self.tabella_storico.setHorizontalHeaderLabels(["Data", "Prestazione", "Medico", "Referto/Stato"])
+        self.tabella_storico.setColumnCount(5)
+        self.tabella_storico.setHorizontalHeaderLabels(["Data", "Prestazione", "Medico", "Referto/Stato", "ID_Valutazione"])
+        self.tabella_storico.hideColumn(4)
         self.tabella_storico.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tabella_storico.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.tabella_storico.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows) # Permette di selezionare un'intera riga
         layout.addWidget(self.tabella_storico)
+        
+        if self.ruolo_utente == "Medico":
+            self.btn_leggi_referto = QPushButton("Leggi Referto (Valutazione Funzionale)")
+            self.btn_leggi_referto.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 5px;")
+            self.btn_leggi_referto.clicked.connect(self.apri_dettaglio_referto)
+            layout.addWidget(self.btn_leggi_referto)
+     
         # 2. Tabella Storico Fatture 
         self.tabella_fatture = QTableWidget()
         self.tabella_fatture.setColumnCount(3)
@@ -113,6 +124,8 @@ class SchedaPazienteView(QWidget):
             self.tabella_storico.setItem(riga, 1, QTableWidgetItem(str(visita['nomePrestazione'])))
             self.tabella_storico.setItem(riga, 2, QTableWidgetItem(medico_completo))
             self.tabella_storico.setItem(riga, 3, QTableWidgetItem(str(visita['stato'])))
+            id_val = str(visita['id_valutazione']) if visita['id_valutazione'] else ""
+            self.tabella_storico.setItem(riga, 4, QTableWidgetItem(id_val))
     
     def _carica_storico_fatture(self):
         """Richiede al controller tutte le fatture emesse per il paziente."""
@@ -144,3 +157,22 @@ class SchedaPazienteView(QWidget):
             QMessageBox.information(self, "Successo", "Dati anagrafici aggiornati correttamente.")
         else:
             QMessageBox.warning(self, "Errore", "Impossibile aggiornare i dati.")
+    
+    def apri_dettaglio_referto(self):
+     riga = self.tabella_storico.currentRow()
+     if riga < 0:
+         QMessageBox.warning(self, "Attenzione", "Seleziona una visita dallo storico.")
+         return
+
+     stato = self.tabella_storico.item(riga, 3).text()
+     if stato != "Completato":
+         QMessageBox.information(self, "Info", "Nessun referto disponibile. La visita non è ancora stata completata.")
+         return
+
+     # Estraiamo l'ID nascosto
+     id_val_testo = self.tabella_storico.item(riga, 4).text()
+     if id_val_testo:
+         dialog = DettaglioRefertoDialog(int(id_val_testo), self)
+         dialog.exec()
+     else:
+         QMessageBox.warning(self, "Errore", "Referto non trovato nel database.")

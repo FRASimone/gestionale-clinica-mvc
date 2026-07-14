@@ -7,8 +7,8 @@ class Paziente:
         self.__telefono = telefono
         self.__is_agonista = is_agonista
         
-        self.__cartella_clinica = None 
-        self.__lista_fatture: list = []
+        self.__cartellaClinica = None 
+        self.__listaFatture: list = []
 
     def getCf(self) -> str:
         return self.__cf

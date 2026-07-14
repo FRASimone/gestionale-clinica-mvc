@@ -5,6 +5,7 @@ from PyQt6.QtGui import QFont
 
 # Importiamo la View dell'agenda già pronta
 from views.agenda_medico_view import AgendaMedicoView
+from views.ricerca_pazienti_view import RicercaPazientiView
 
 class DashboardMedico(QWidget):
     def __init__(self, id_medico: int = 1, nome_medico: str = "Rossi"):
@@ -48,6 +49,7 @@ class DashboardMedico(QWidget):
         
         # Inseriamo l'agenda come Tab principale
         self.tabs.addTab(self.view_agenda, "Agenda Appuntamenti e Visite")
+        self.tabs.addTab(RicercaPazientiView(ruolo_utente="Medico"), "Ricerca Pazienti")
         
         layout_principale.addWidget(self.tabs)
 

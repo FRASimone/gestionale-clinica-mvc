@@ -148,7 +148,8 @@ class AgendaMedicoView(QWidget):
             return
             
         cf_selezionato = self.tabella.item(riga, 5).text() # Estraiamo il CF nascosto!
-        self.finestra_scheda = SchedaPazienteView(cf_paziente=cf_selezionato)
+        self.finestra_scheda = SchedaPazienteView(cf_paziente=cf_selezionato,
+                                                  ruolo_utente="Medico")
         self.finestra_scheda.show()
 
 

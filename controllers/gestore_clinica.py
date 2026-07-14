@@ -1,9 +1,10 @@
 import sqlite3
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 # Importiamo i models che abbiamo appena costruito
 from models.prestazione import Prestazione
 from models.cartella_clinica import CartellaClinica
+from models.appuntamento import Appuntamento
 
 class GestoreClinica:
     def __init__(self, db_path="database/clinica.db"):
@@ -89,16 +90,63 @@ class GestoreClinica:
 
     from datetime import date, time, timedelta
 
-# ... (resto del codice) ...
 
-    def creaAppuntamento(self, data: date, ora: time, cfPaziente: str, idMedico: int, idPrestazione: int) -> bool:
-        # Il Controller traduce gli oggetti Date e Time in stringhe per SQLite ("YYYY-MM-DD" e "HH:MM")
+    def creaAppuntamento(self, data: date, ora: time, cfPaziente: str, idMedico: int, idPrestazione: int) -> tuple:
+        """Crea un appuntamento calcolando la durata e bloccando le sovrapposizioni (RF12)."""
         data_str = data.isoformat()
         ora_str = ora.strftime("%H:%M")
         
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
+            
+            # --- FASE 1: Recupero durata e Calcolo Limiti ---
+            # Dobbiamo prima fare la SELECT per definire "durata_nuova"
+            cursor.execute("SELECT durataMinuti FROM Prestazione WHERE id = ?", (idPrestazione,))
+            prestazione_nuova = cursor.fetchone()
+            
+            if not prestazione_nuova:
+                conn.close()
+                return False, "Errore: Prestazione non trovata nel catalogo."
+                
+            durata_nuova = prestazione_nuova['durataMinuti']
+            # Ora possiamo calcolare la fine usando il metodo statico!
+            fine_nuovo_str = Appuntamento.calcolaOraFine(ora_str, durata_nuova)
+            
+            # --- FASE 2a: Verifica Conflitti nell'Agenda del Medico ---
+            cursor.execute("""
+                SELECT A.oraInizio, P.durataMinuti 
+                FROM Appuntamento A
+                JOIN Prestazione P ON A.id_prestazione = P.id
+                WHERE A.id_medico = ? AND A.data = ? AND A.stato != 'Annullato'
+            """, (idMedico, data_str))
+            
+            appuntamenti_medico = cursor.fetchall()
+            for app in appuntamenti_medico:
+                fine_es_str = Appuntamento.calcolaOraFine(app['oraInizio'], app['durataMinuti'])
+                
+                if ora_str < fine_es_str and fine_nuovo_str > app['oraInizio']:
+                    conn.close()
+                    return False, f"Conflitto Medico: Il dottore è già occupato dalle {app['oraInizio']} alle {fine_es_str}."
+
+            # --- FASE 2b: Verifica Conflitti nell'Agenda del Paziente ---
+            cursor.execute("""
+                SELECT A.oraInizio, P.durataMinuti, M.cognome AS cognome_medico
+                FROM Appuntamento A
+                JOIN Prestazione P ON A.id_prestazione = P.id
+                JOIN Dipendente M ON A.id_medico = M.id
+                WHERE A.cf_paziente = ? AND A.data = ? AND A.stato != 'Annullato'
+            """, (cfPaziente, data_str))
+            
+            appuntamenti_paziente = cursor.fetchall()
+            for app in appuntamenti_paziente:
+                fine_es_str = Appuntamento.calcolaOraFine(app['oraInizio'], app['durataMinuti'])
+                
+                if ora_str < fine_es_str and fine_nuovo_str > app['oraInizio']:
+                    conn.close()
+                    return False, f"Conflitto Paziente: Ha già una visita (Dott. {app['cognome_medico']}) dalle {app['oraInizio']} alle {fine_es_str}."
+            
+            # --- FASE 3: Inserimento ---
             cursor.execute('''
                 INSERT INTO Appuntamento 
                 (data, oraInizio, stato, cf_paziente, id_medico, id_prestazione, id_memo, id_valutazione) 
@@ -107,11 +155,12 @@ class GestoreClinica:
             
             conn.commit()
             conn.close()
-            return True, "Appuntamento prenotato con successo."
+            # Usiamo fine_nuovo_str direttamente senza fare .strftime()
+            return True, f"Appuntamento confermato.\n(Durata prevista: {durata_nuova} min. Fine: {fine_nuovo_str})"
             
         except sqlite3.Error as e:
             print(f"Errore creazione appuntamento: {e}")
-            return False
+            return False, "Errore generico del database durante la prenotazione."
         
     def getDettagliAppuntamento(self, id_appuntamento: int) -> dict:
         """Recupera i dettagli di un singolo appuntamento per pre-compilare l'interfaccia di modifica."""
@@ -143,28 +192,80 @@ class GestoreClinica:
             except sqlite3.Error:
                 return False
 
-    def modificaOrarioAppuntamento(self, idAppuntamento: int, nuovaData: date, nuovaOra: time) -> bool:
-        """Aggiorna data e ora di un appuntamento esistente."""
-        
-        # Conversione ESPLICITA: da oggetti Python a stringhe per il database
+    def modificaOrarioAppuntamento(self, idAppuntamento: int, nuovaData: date, nuovaOra: time) -> tuple:
+        """Aggiorna data e ora di un appuntamento esistente, verificando prima i conflitti orari (RF13)."""
         data_str = nuovaData.isoformat()
         ora_str = nuovaOra.strftime("%H:%M")
-        #Aggiorna dati e ora di un appuntamento esistente
+        
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
             
-            # Passiamo le stringhe tradotte (data_str, ora_str) alla query
+            # --- FASE 0: Recupero dei dati attuali dell'appuntamento ---
+            cursor.execute("""
+                SELECT A.cf_paziente, A.id_medico, P.durataMinuti
+                FROM Appuntamento A
+                JOIN Prestazione P ON A.id_prestazione = P.id
+                WHERE A.id = ?
+            """, (idAppuntamento,))
+            app_corrente = cursor.fetchone()
+            
+            if not app_corrente:
+                conn.close()
+                return False, "Errore: Appuntamento non trovato nel sistema."
+                
+            cfPaziente = app_corrente['cf_paziente']
+            idMedico = app_corrente['id_medico']
+            durata_nuova = app_corrente['durataMinuti']
+            
+            # --- FASE 1: Calcolo Limiti del Nuovo Orario con metodo statico ---
+            fine_nuovo_str = Appuntamento.calcolaOraFine(ora_str, durata_nuova)
+            
+            # --- FASE 2a: Verifica Conflitti nell'Agenda del Medico ---
+            cursor.execute("""
+                SELECT A.oraInizio, P.durataMinuti 
+                FROM Appuntamento A
+                JOIN Prestazione P ON A.id_prestazione = P.id
+                WHERE A.id_medico = ? AND A.data = ? AND A.stato != 'Annullato' AND A.id != ?
+            """, (idMedico, data_str, idAppuntamento))
+            
+            appuntamenti_medico = cursor.fetchall()
+            for app in appuntamenti_medico:
+                fine_es_str = Appuntamento.calcolaOraFine(app['oraInizio'], app['durataMinuti'])
+                
+                if ora_str < fine_es_str and fine_nuovo_str > app['oraInizio']:
+                    conn.close()
+                    return False, f"Conflitto Medico: Il dottore è già occupato dalle {app['oraInizio']} alle {fine_es_str}."
+
+            # --- FASE 2b: Verifica Conflitti nell'Agenda del Paziente ---
+            cursor.execute("""
+                SELECT A.oraInizio, P.durataMinuti, M.cognome AS cognome_medico
+                FROM Appuntamento A
+                JOIN Prestazione P ON A.id_prestazione = P.id
+                JOIN Dipendente M ON A.id_medico = M.id
+                WHERE A.cf_paziente = ? AND A.data = ? AND A.stato != 'Annullato' AND A.id != ?
+            """, (cfPaziente, data_str, idAppuntamento))
+            
+            appuntamenti_paziente = cursor.fetchall()
+            for app in appuntamenti_paziente:
+                fine_es_str = Appuntamento.calcolaOraFine(app['oraInizio'], app['durataMinuti'])
+                
+                if ora_str < fine_es_str and fine_nuovo_str > app['oraInizio']:
+                    conn.close()
+                    return False, f"Conflitto Paziente: Ha già una visita (Dott. {app['cognome_medico']}) dalle {app['oraInizio']} alle {fine_es_str}."
+            
+            # --- FASE 3: Aggiornamento ---
             cursor.execute("UPDATE Appuntamento SET data = ?, oraInizio = ? WHERE id = ?", 
                            (data_str, ora_str, idAppuntamento))
             
             conn.commit()
-            righe_modificate = cursor.rowcount
             conn.close()
-            return righe_modificate > 0
-        except sqlite3.Error:
-            return False
-
+            return True, f"Appuntamento riprogrammato con successo alle {ora_str}."
+            
+        except sqlite3.Error as e:
+            print(f"Errore modifica appuntamento: {e}")
+            return False, "Errore generico del database durante la modifica."
+        
     def getAgendaMedico(self, idMedico: int, data: date) -> list:
         """Restituisce gli appuntamenti di un medico per una specifica data."""
         
@@ -303,7 +404,7 @@ class GestoreClinica:
             print(f"Errore DB durante l'invio dei promemoria: {e}")
     
     def getStoricoPaziente(self, cf_paziente: str) -> list:
-        """Recupera tutto lo storico delle visite di un paziente specifico (RF8)."""
+        """Recupera tutto lo storico delle visite di un paziente specifico."""
         conn = self._get_connection()
         cursor = conn.cursor()
         
@@ -312,7 +413,8 @@ class GestoreClinica:
                 A.data, 
                 Pr.nomePrestazione, 
                 M.nome AS nome_medico, M.cognome AS cognome_medico,
-                A.stato
+                A.stato,
+                A.id_valutazione
             FROM Appuntamento A
             JOIN Prestazione Pr ON A.id_prestazione = Pr.id
             JOIN Dipendente M ON A.id_medico = M.id
@@ -324,3 +426,16 @@ class GestoreClinica:
         conn.close()
         
         return [dict(row) for row in rows]
+
+    def getDettagliValutazione(self, id_valutazione: int) -> dict:
+        """Recupera il testo del referto medico."""
+        if not id_valutazione:
+            return {}
+            
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT anomalie, noteAggiuntive, prevOvertraining, valutazioneClinica FROM ValutazioneFunzionale WHERE id = ?", (id_valutazione,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        return dict(row) if row else {}

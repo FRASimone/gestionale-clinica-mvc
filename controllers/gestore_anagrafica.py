@@ -46,6 +46,45 @@ class GestoreAnagrafica:
         except Exception as e:
             return False, f"Errore del database: {str(e)}"
     
+    def modifica_ruolo(self, id_dipendente: int, nuovo_ruolo: str) -> bool:
+        """Aggiorna il ruolo di un dipendente nel database."""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Dipendente SET ruolo = ? WHERE id = ?",
+                (nuovo_ruolo, id_dipendente)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Errore aggiornamento ruolo: {e}")
+            return False
+        
+    def get_tutti_dipendenti(self) -> list:
+        """Recupera la lista di tutti i dipendenti per la schermata di Gestione Ruoli."""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nome, cognome, email, ruolo FROM Dipendente")
+            rows = cursor.fetchall()
+            conn.close()
+            
+            risultati = []
+            for row in rows:
+                risultati.append({
+                    "id": row["id"],
+                    "nome": row["nome"],
+                    "cognome": row["cognome"],
+                    "email": row["email"],
+                    "ruolo": row["ruolo"]
+                })
+            return risultati
+        except Exception as e:
+            print(f"Errore DB in get_tutti_dipendenti: {e}")
+            return []
+    
     def assegnaSpecializzazione(self, idMedico: int, idSpecializzazione: int) -> bool:
         """
         Associa una specializzazione a un medico esistente nel database.

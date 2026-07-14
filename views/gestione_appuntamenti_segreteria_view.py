@@ -53,12 +53,12 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         # --- Bottoni Amministrativi (RF13 e RF14) ---
         bottoni_layout = QHBoxLayout()
         
-        self.btn_modifica = QPushButton("Modifica Orario/Data (RF13)")
+        self.btn_modifica = QPushButton("Modifica Orario/Data")
         self.btn_modifica.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 10px;")
         self.btn_modifica.clicked.connect(self.apri_modifica)
         bottoni_layout.addWidget(self.btn_modifica)
 
-        self.btn_cancella = QPushButton("Cancella Appuntamento (RF14)")
+        self.btn_cancella = QPushButton("Cancella Appuntamento")
         self.btn_cancella.setStyleSheet("background-color: #E74C3C; color: white; font-weight: bold; padding: 10px;")
         self.btn_cancella.clicked.connect(self.cancella_selezionato)
         bottoni_layout.addWidget(self.btn_cancella)

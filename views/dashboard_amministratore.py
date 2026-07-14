@@ -6,6 +6,7 @@ from PyQt6.QtGui import QFont
 # Importiamo la View 
 from views.reportistica_view import ReportisticaView
 from views.registrazione_dipendente import RegistrazioneDipendenteView
+from views.gestione_ruoli_view import GestioneRuoliView
 
 class DashboardAmministratore(QWidget):
     def __init__(self, nome_admin="Amministratore"):
@@ -42,10 +43,12 @@ class DashboardAmministratore(QWidget):
         # --- SISTEMA A SCHEDE (Tabs) ---
         self.tabs = QTabWidget()
         
-        # Aggiungiamo la nostra potentissima Reportistica
+        # Aggiungiamo la nostra Reportistica
         self.tabs.addTab(ReportisticaView(), "Area Reportistica e Fatturati")
         
         self.tabs.addTab(RegistrazioneDipendenteView(), "Gestione Dipendenti")
+        
+        self.tabs.addTab(GestioneRuoliView(), "Gestione Ruoli e Permessi")
         
         layout_principale.addWidget(self.tabs)
 
@@ -72,6 +75,6 @@ if __name__ == "__main__":
     # Applichiamo uno stile generico per renderla più moderna
     app.setStyle("Fusion") 
     
-    finestra = DashboardAmministratore(nome_admin="Alessio Mazzone")
+    finestra = DashboardAmministratore(nome_admin="Admin Supremo")
     finestra.show()
     sys.exit(app.exec())

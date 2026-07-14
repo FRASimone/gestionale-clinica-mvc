@@ -61,20 +61,22 @@ class ModificaAppuntamentoView(QWidget):
         qdata = self.input_data.date()
         nuova_data_obj = date(qdata.year(), qdata.month(), qdata.day())
         
-        # 2. Estraiamo l'Ora (Creiamo l'oggetto time richiesto dal tuo metodo)
+        # 2. Estraiamo l'Ora
         qora = self.input_ora.time()
         nuova_ora_obj = time(qora.hour(), qora.minute())
 
-        # 3. Chiamiamo il tuo metodo originale!
-        successo = self.gestore_clinica.modificaOrarioAppuntamento(
+        # 3. Chiamiamo il metodo che ora restituisce DUE valori (tupla)
+        successo, messaggio = self.gestore_clinica.modificaOrarioAppuntamento(
             self.id_appuntamento, nuova_data_obj, nuova_ora_obj
         )
         
+        # 4. Mostriamo il messaggio appropriato in base all'esito
         if successo:
-            QMessageBox.information(self, "Successo", "L'appuntamento è stato riprogrammato correttamente.")
+            QMessageBox.information(self, "Successo", messaggio)
             self.close()
         else:
-            QMessageBox.warning(self, "Errore", "Impossibile modificare l'appuntamento.")
+            # Se c'è un conflitto, mostriamo il messaggio di errore calcolato dal Controller
+            QMessageBox.warning(self, "Impossibile Modificare", messaggio)
 
 if __name__ == "__main__":
     import sys

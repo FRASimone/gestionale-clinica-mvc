@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QComboBox, 
-                             QDateEdit, QTimeEdit, QPushButton, QMessageBox, QLabel)
+                             QDateEdit, QTimeEdit, QPushButton, QMessageBox, QLabel, QDialog)
 from PyQt6.QtCore import QDate, QTime, Qt
 from datetime import date, time # Importiamo gli oggetti che vuole il tuo UML
 
+from views.registrazione_paziente_dialog import RegistrazionePazienteDialog
 from controllers.gestore_clinica import GestoreClinica
 
 class PrenotazioneView(QWidget):
@@ -40,6 +41,12 @@ class PrenotazioneView(QWidget):
         self.combo_prestazione = QComboBox()
 
         form_layout.addRow("Paziente:", self.combo_paziente)
+        
+        btn_nuovo_paziente = QPushButton("+ Registra Nuovo Paziente")
+        btn_nuovo_paziente.setStyleSheet("background-color: #3498DB; color: white;")
+        btn_nuovo_paziente.clicked.connect(self.apri_registrazione_rapida)
+        form_layout.addRow("", btn_nuovo_paziente)
+        
         form_layout.addRow("Medico:", self.combo_medico)
         form_layout.addRow("Prestazione:", self.combo_prestazione)
         form_layout.addRow("Data Visita:", self.input_data)
@@ -93,14 +100,33 @@ class PrenotazioneView(QWidget):
         ora_obj = time(qora.hour(), qora.minute())
 
         # CHIAMATA AL CONTROLLER
-        successo = self.gestore_clinica.creaAppuntamento(data_obj, ora_obj, cf_paziente, id_medico, id_prestazione)
+        successo, messaggio  = self.gestore_clinica.creaAppuntamento(data_obj, ora_obj, cf_paziente, id_medico, id_prestazione)
 
         if successo:
-            QMessageBox.information(self, "Successo", "Appuntamento prenotato e inserito in agenda!")
+            QMessageBox.information(self, "Successo", messaggio)
             self.close() # Chiude la finestra
         else:
-            QMessageBox.warning(self, "Errore", "Si è verificato un problema durante la prenotazione.")
+            QMessageBox.warning(self, "Impossibile Prenotare", messaggio)
 
+    def apri_registrazione_rapida(self):
+        dialog = RegistrazionePazienteDialog(self)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Il paziente è stato salvato! 
+            # 1. Ricarichiamo TUTTI i pazienti dal DB
+            self.combo_paziente.clear()
+            # Questo è il for che avevi nel metodo _popola_tendine()
+            for paz in self.gestore_clinica.getTuttiPazienti():
+                testo = f"{paz['nome']} {paz['cognome']} ({paz['cf']})"
+                self.combo_paziente.addItem(testo, paz['cf'])
+            
+            # 2. Selezioniamo automaticamente quello appena creato
+            nuovo_cf = dialog.cf_creato
+            indice = self.combo_paziente.findData(nuovo_cf)
+            if indice != -1:
+                self.combo_paziente.setCurrentIndex(indice)
+                
+                
 # --- TEST DIRETTO DELLA VIEW ---
 if __name__ == "__main__":
     import sys

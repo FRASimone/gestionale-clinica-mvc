@@ -11,6 +11,10 @@ class Memo:
         self.__inviato = True
 
     # --- Getters ---
+    
+    def getDataInvioProgrammata(self) -> datetime:
+        return self.__dataInvioProgrammata
+    
     def getId(self) -> int:
         return self.__id
 
