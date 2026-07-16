@@ -19,7 +19,7 @@ class SchedaPazienteView(QWidget):
         self.gestore_clinica = GestoreClinica()
         self.gestore_admin = GestoreAmministrativa()
         
-        self.setWindowTitle(f"Scheda Paziente: {self.cf_paziente}") 
+        self.setWindowTitle(f"Scheda Paziente - Cartella Clinica: {self.cf_paziente}") 
         self.resize(750, 600)
         
         self._build_ui()
@@ -84,7 +84,7 @@ class SchedaPazienteView(QWidget):
             self.btn_leggi_referto.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 5px;")
             self.btn_leggi_referto.clicked.connect(self.apri_dettaglio_referto)
             layout.addWidget(self.btn_leggi_referto)
-            self.btn_cartella_clinica = QPushButton("Apri Cartella Clinica (Anamnesi)")
+            self.btn_cartella_clinica = QPushButton("Apri Anamnesi")
             self.btn_cartella_clinica.setStyleSheet("background-color: #16A085; color: white; font-weight: bold; padding: 8px;")
             self.btn_cartella_clinica.clicked.connect(self.apri_cartella_clinica)
             layout.addWidget(self.btn_cartella_clinica)

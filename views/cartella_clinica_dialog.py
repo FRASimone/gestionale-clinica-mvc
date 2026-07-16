@@ -9,7 +9,7 @@ class CartellaClinicaDialog(QDialog):
         self.cf_paziente = cf_paziente
         self.ruolo_utente = ruolo_utente
 
-        self.setWindowTitle(f"Cartella Clinica - Anamnesi Paziente {self.cf_paziente}")
+        self.setWindowTitle(f"Anamnesi Paziente {self.cf_paziente}")
         self.resize(450, 400)
 
         self._build_ui()
@@ -18,7 +18,7 @@ class CartellaClinicaDialog(QDialog):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        titolo = QLabel("Storia Clinica e Anamnesi")
+        titolo = QLabel("Anamnesi")
         titolo.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(titolo)
 

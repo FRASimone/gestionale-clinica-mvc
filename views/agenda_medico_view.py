@@ -138,8 +138,9 @@ class AgendaMedicoView(QWidget):
         # Estraiamo l'ID nascosto dalla colonna 0
         id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
         
+        id_medico_corrente = self.combo_medico.currentData()
         # Apriamo la finestra passandole l'ID!
-        self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato, ruolo_utente=self.ruolo_utente)
+        self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato, id_medico=id_medico_corrente)
         self.finestra_visita.show()
         
     def apri_scheda_medico(self):

@@ -6,9 +6,9 @@ from controllers.gestore_clinica import AccessoNegatoError, GestoreClinica
 
 class ValutazioneFunzionaleView(QWidget):
     # Passiamo l'ID dell'appuntamento direttamente quando apriamo la finestra
-    def __init__(self, id_appuntamento: int, ruolo_utente="Medico"):
+    def __init__(self, id_appuntamento: int, id_medico: int):
         super().__init__()
-        self.ruolo_utente = ruolo_utente
+        self.id_medico = id_medico
         self.gestore_clinica = GestoreClinica()
         self.id_appuntamento = id_appuntamento
         
@@ -79,7 +79,7 @@ class ValutazioneFunzionaleView(QWidget):
         try:
             successo = self.gestore_clinica.registraValutazioneFunzionale(
             self.id_appuntamento, anomalie, note, overtraining, valutazione,
-            ruolo_utente=self.ruolo_utente
+            id_medico=self.id_medico
         )
         except AccessoNegatoError as e:
             QMessageBox.critical(self, "Accesso Negato", str(e))

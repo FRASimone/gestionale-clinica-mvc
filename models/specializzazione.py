@@ -1,17 +1,17 @@
 class Specializzazione:
-    def __init__(self, id_spec: int, nome: str, dettagli: str = ""):
-        self.id_spec = id_spec
-        self.nome = nome
-        self.dettagli = dettagli
+    def __init__(self, id_spec: int, nome: str, descrizione: str = ""):
+        self.__id = id_spec
+        self.__nome = nome
+        self.__descrizione = descrizione
 
     def getNome(self) -> str:
         """Restituisce il nome della specializzazione."""
-        return self.nome
+        return self.__nome
 
     def getDettagli(self) -> dict:
         """Restituisce i dettagli impacchettati in un dizionario come da UML."""
         return {
-            "id": self.id_spec,
-            "nome": self.nome,
-            "descrizione": self.dettagli
+            "id": self.__id,
+            "nome": self.__nome,
+            "descrizione": self.__descrizione
         }

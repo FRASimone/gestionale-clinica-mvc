@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time 
 
 # Importiamo i models che abbiamo appena costruito
 from models.prestazione import Prestazione
@@ -112,8 +112,22 @@ class GestoreClinica:
     # ==========================================
     # SEZIONE 2: CORE BUSINESS
     # ==========================================
+    
+    def _verifica_ruolo_da_id(self, id_dipendente: int, ruoli_ammessi: list):
+        """Verifica il ruolo REALE dell'utente consultando il database,
+        invece di fidarsi di una stringa passata dalla UI (RNF10)."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ruolo FROM Dipendente WHERE id = ?", (id_dipendente,))
+        row = cursor.fetchone()
+        conn.close()
 
-    from datetime import date, time, timedelta
+        if not row or row['ruolo'] not in ruoli_ammessi:
+            raise AccessoNegatoError(
+                f"Operazione riservata a {ruoli_ammessi}."
+            )
+
+
 
 
     def creaAppuntamento(self, data: date, ora: time, cfPaziente: str, idMedico: int, idPrestazione: int) -> tuple:
@@ -345,12 +359,13 @@ class GestoreClinica:
             print(f"Errore DB in aggiungiPrestazione: {e}")
             return False
 
-    def registraValutazioneFunzionale(self, idAppuntamento: int, anomalie: str, noteAggiuntive: str, prevOvertraining: str, valutazioneClinica: int, ruolo_utente="Medico") -> bool:
+    def registraValutazioneFunzionale(self, idAppuntamento: int, anomalie: str, noteAggiuntive: str,
+                                   prevOvertraining: str, valutazioneClinica: int, id_medico: int) -> bool:
         """
         Crea la valutazione funzionale e la collega all'appuntamento.
         (Rispetta esattamente i parametri stringa/int del tuo UML).
         """
-        self._verifica_ruolo(ruolo_utente, ["Medico"])
+        self._verifica_ruolo_da_id(id_medico, ["Medico"])
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
