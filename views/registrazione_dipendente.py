@@ -10,9 +10,9 @@ class RegistrazioneDipendenteView(QWidget):
         self.gestore = GestoreAnagrafica()
         
         self.setWindowTitle("Registrazione Nuovo Personale")
-        self.resize(450, 500) # Leggermente più alta per far spazio alla lista
+        self.resize(450, 500)
         self._build_ui()
-        self._carica_specializzazioni() # Popola la lista all'avvio
+        self._carica_specializzazioni() # Popola la lista all'avvio, tramite il metodo sotto
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -24,7 +24,8 @@ class RegistrazioneDipendenteView(QWidget):
         titolo.setFont(font)
         titolo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(titolo)
-
+        #form con nome, cognome, email, password, e una combo per il ruolo 
+        # (Medico/Segretario/Amministratore).
         form_layout = QFormLayout()
 
         self.input_nome = QLineEdit()
@@ -37,7 +38,7 @@ class RegistrazioneDipendenteView(QWidget):
 
         self.combo_ruolo = QComboBox()
         self.combo_ruolo.addItems(["Medico", "Segretario", "Amministratore"])
-        # MAGIC TRICK: Quando il ruolo cambia, chiamiamo una funzione per nascondere/mostrare le specializzazioni
+        #Quando il ruolo cambia, chiamiamo una funzione per nascondere/mostrare le specializzazioni
         self.combo_ruolo.currentTextChanged.connect(self.toggle_specializzazioni)
 
         form_layout.addRow("Nome:", self.input_nome)
@@ -57,11 +58,13 @@ class RegistrazioneDipendenteView(QWidget):
 
         btn_registra = QPushButton("Registra nel Sistema")
         btn_registra.setStyleSheet("background-color: #2980B9; color: white; font-weight: bold; padding: 10px;")
+        #click per il metodo di registrazione UI
         btn_registra.clicked.connect(self.handle_registrazione)
         layout.addWidget(btn_registra)
 
     def _carica_specializzazioni(self):
         """Prende le specializzazioni dal DB e le mette nella UI."""
+        # chiamata al metodo del gestore Anagrafica
         specializzazioni = self.gestore.getTutteSpecializzazioni()
         for spec in specializzazioni:
             item = QListWidgetItem(spec["nome"])
@@ -81,23 +84,26 @@ class RegistrazioneDipendenteView(QWidget):
         email = self.input_email.text().strip()
         password = self.input_password.text().strip()
         ruolo = self.combo_ruolo.currentText()
-
+        # Validazione minima lato UI (campi non vuoti).
         if not nome or not cognome or not email or not password:
             QMessageBox.warning(self, "Errore", "Tutti i campi sono obbligatori.")
             return
 
-        # 1. Registriamo il dipendente base
+        # 1. Registriamo il dipendente base, chiama il metodo del gestore Anagrafica
+        # ritorna una tupla ovvero: True o False e il messaggio specificato nel Gestore
         successo, messaggio = self.gestore.registraDipendente(nome, cognome, email, password, ruolo)
 
         if successo:
             # 2. Se è un medico, associamo le specializzazioni
             if ruolo == "Medico":
+                # ricaviamo l'id dal metodo
                 id_nuovo_medico = self.gestore.getDipendenteByEmail(email)
                 
-                # Recuperiamo tutti gli elementi cliccati nella lista
+                # Recuperiamo tutti gli elementi cliccati nella lista delle specializzazioni
                 elementi_selezionati = self.lista_spec.selectedItems()
                 for item in elementi_selezionati:
                     id_spec = item.data(Qt.ItemDataRole.UserRole)
+                    # chiamata al metodo del gestore Anagrafica
                     self.gestore.assegnaSpecializzazione(id_nuovo_medico, id_spec)
 
             QMessageBox.information(self, "Successo", f"{messaggio}\n\nProfilo creato correttamente.")

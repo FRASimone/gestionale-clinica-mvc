@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout
 from views.registrazione_paziente_view import RegistrazionePazienteView
 
 class RegistrazionePazienteDialog(QDialog):
+    #serve alla segreteria quando nell appuntamento
+    #deve aggiungere un paziente
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Registrazione Rapida Nuovo Paziente")

@@ -6,7 +6,11 @@ from controllers.gestore_anagrafica import GestoreAnagrafica
 class RegistrazionePazienteView(QWidget):
     # Segnale emesso quando il paziente viene registrato con successo.
     # Utile per aggiornare le tendine di altre viste.
-    paziente_salvato = pyqtSignal(str) 
+    # Serve a comunicare tra widget disaccoppiati, come il dialog
+    paziente_salvato = pyqtSignal(str) #porta con se il CF appena creato
+    #Questo è il meccanismo che permette a PrenotazioneView 
+    # (tramite il dialog) di sapere immediatamente quale 
+    # paziente è stato appena creato e selezionarlo automaticamente nella combo
 
     def __init__(self):
         super().__init__()
@@ -36,6 +40,7 @@ class RegistrazionePazienteView(QWidget):
         
         btn_aggiungi = QPushButton("Salva Paziente")
         btn_aggiungi.setStyleSheet("background-color: #27AE60; color: white; font-weight: bold;")
+        # chiamata al metodo della view handle aggiugni paziente
         btn_aggiungi.clicked.connect(self.handle_aggiungi_paziente)
         layout.addWidget(btn_aggiungi)
         
@@ -47,20 +52,21 @@ class RegistrazionePazienteView(QWidget):
         cognome = self.input_cognome.text().strip()
         email = self.input_email.text().strip()
         telefono = self.input_telefono.text().strip()
+        #restituisce True se spuntata o False altrimenti
         is_agonista = self.check_agonista.isChecked()
-        
+        #controllo sui campi
         if not cf or not nome or not cognome:
             QMessageBox.warning(self, "Errore", "CF, Nome e Cognome obbligatori.")
             return
-            
-        #nuovo_paziente = self.gestore.aggiungiPaziente(cf, nome, cognome, email, telefono, is_agonista)
+        
+        #chiamata al metodo del gestore Anagrafica  
         nuovo_paziente = self.gestore.aggiungiPaziente(cf, nome, cognome, email, telefono, is_agonista)
         
         if nuovo_paziente:
             QMessageBox.information(self, "Successo", "Paziente registrato!")
             # Emette il segnale col codice fiscale appena salvato
             self.paziente_salvato.emit(cf) 
-            self._pulisci_form()
+            self._pulisci_form() #svuoto i campi con il metodo sotto
         else:
             QMessageBox.critical(self, "Errore", "CF già presente o errore DB.")
 

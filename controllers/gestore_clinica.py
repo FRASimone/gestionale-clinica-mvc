@@ -448,7 +448,9 @@ class GestoreClinica:
         """Recupera tutto lo storico delle visite di un paziente specifico."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+        #dala tabella Appuntamento prende la data, lo stato e l'id della valutazione
+        #dalla tabella Prestazione usando l'id recupera il nome
+        #dalla tabella Dipendente usando l'id del medico ne prende il nome e cognome
         query = """
             SELECT 
                 A.data, 
@@ -462,10 +464,15 @@ class GestoreClinica:
             WHERE A.cf_paziente = ?
             ORDER BY A.data DESC, A.oraInizio DESC
         """
+        #"Prendi l'ID della prestazione salvato nell'appuntamento, 
+        # cercalo nella tabella Prestazione e unisci i dati di quella riga". 
+        # la query può accedere alla colonna nomePrestazione
+        # stessa cosa per il medico
+        #basandosi sul CF del paziente e ordinando i risultati in modo decrescente
         cursor.execute(query, (cf_paziente,))
         rows = cursor.fetchall()
         conn.close()
-        
+        #trasforma i risultati in una lista di dizionari
         return [dict(row) for row in rows]
 
     def getDettagliValutazione(self, id_valutazione: int, ruolo_utente="Medico") -> dict:

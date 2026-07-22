@@ -4,6 +4,7 @@ import random
 # Importiamo i Model appena creati
 from models.dipendente import Medico, Segretario, Amministratore
 from models.paziente import Paziente
+from typing import List
 import re
 
 class GestoreAnagrafica:
@@ -18,8 +19,10 @@ class GestoreAnagrafica:
 
     def registraDipendente(self, nome, cognome, email, password, ruolo):
         """Registra un nuovo dipendente."""
+        # controllo password sulla lunghezza
         if len(password) < 8:
             return False, "Errore: La password deve contenere almeno 8 caratteri."
+        # controllo che nella password ci siano sia numeri che lettere
         if not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
             return False, "Errore: La password deve contenere almeno una lettera e un numero."
 
@@ -32,34 +35,55 @@ class GestoreAnagrafica:
 
         # In un progetto reale qui bloccheremmo il salvataggio in attesa del codice.
         # Per mantenere l'UI semplice, lo salviamo direttamente ma dimostriamo 
-        # al professore che la logica di verifica è predisposta.
+        # che la logica di verifica è predisposta.
         try:
+            # chiamata al metodo di connessione
             conn = self._get_connection()
             cursor = conn.cursor()
+            #la libreria sqlite3 è programmata per cercare i ? all'interno della stringa SQL.
+            # inoltre evita SQL Injection 
             cursor.execute(
                 "INSERT INTO Dipendente (nome, cognome, email, password, ruolo) VALUES (?, ?, ?, ?, ?)",
                 (nome, cognome, email, password, ruolo)
             )
-            conn.commit()
-            conn.close()
+            conn.commit() # conferma finale
+            conn.close() # chiusura connessione
             return True, f"Registrazione completata. (Codice inviato: {codice_verifica})"
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError: #errore di unicita'
             return False, "Errore: Questa email è già presente nel sistema."
         except Exception as e:
             return False, f"Errore del database: {str(e)}"
     
     def modifica_ruolo(self, id_dipendente: int, nuovo_ruolo: str) -> bool:
         """Aggiorna il ruolo di un dipendente nel database."""
+        #dall'id modifica il ruolo corrispondente nel nuovo passato
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
+
+            cursor.execute("SELECT ruolo FROM Dipendente WHERE id = ?", (id_dipendente,))
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                return False
+            ruolo_attuale = row["ruolo"]
+
             cursor.execute(
                 "UPDATE Dipendente SET ruolo = ? WHERE id = ?",
                 (nuovo_ruolo, id_dipendente)
             )
+            righe_aggiornate = cursor.rowcount   # <-- catturato SUBITO dopo la UPDATE
+            #serve a vedere se il cambio e' andato a buon fine
+
+            if ruolo_attuale == "Medico" and nuovo_ruolo != "Medico":
+                cursor.execute(
+                    "DELETE FROM Medico_Specializzazione WHERE id_medico = ?",
+                    (id_dipendente,)
+                )
+
             conn.commit()
             conn.close()
-            return True
+            return righe_aggiornate > 0
         except Exception as e:
             print(f"Errore aggiornamento ruolo: {e}")
             return False
@@ -69,6 +93,7 @@ class GestoreAnagrafica:
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
+            #recupera le informazioni dei dipendenti dalla tabella Dipendente
             cursor.execute("SELECT id, nome, cognome, email, ruolo FROM Dipendente")
             rows = cursor.fetchall()
             conn.close()
@@ -115,34 +140,41 @@ class GestoreAnagrafica:
             print(f"Errore DB in assegnaSpecializzazione: {e}")
             return False
 
-    def login(self, email, password, ruolo):
-        """
-        Verifica le credenziali. Se corrette, restituisce l'oggetto Model specifico.
-        """
+    def cercaUtentePerEmail(self, email: str):
+        """Passo 1 del diagramma: ricercaUtente(email)."""
+        # metodo che si connette al database recupera tutte le informazioni
+        # relative all'email e ritorna il primo risultato (unico)
         conn = self._get_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM Dipendente WHERE email = ? AND password = ? AND ruolo = ?",
-            (email, password, ruolo)
-        )
+        cursor.execute("SELECT * FROM Dipendente WHERE email = ?", (email,))
         row = cursor.fetchone()
         conn.close()
+        return dict(row) if row else None
 
-        if row:
-            # Abbiamo trovato l'utente! Impacchettiamo i dati nel Model corretto
-            if ruolo == "Medico":
-                return Medico(row['id'], row['nome'], row['cognome'], row['email'], row['password'])
-            elif ruolo == "Segretario":
-                return Segretario(row['id'], row['nome'], row['cognome'], row['email'], row['password'])
-            elif ruolo == "Amministratore":
-                return Amministratore(row['id'], row['nome'], row['cognome'], row['email'], row['password'])
-        
-        # Se arriviamo qui, email o password sono sbagliate
-        return None
+    def login(self, email, password, ruolo):
+        # chiama il metodo per trovare le informazioni
+        dati_utente = self.cercaUtentePerEmail(email)
+        # controlla l'esistenza dell'utente nel database
+        if dati_utente is None:
+            return None, "utente_inesistente"
+
+        # Passo 2 del diagramma: verificaCredenziali() come logica separata
+        if dati_utente["password"] != password or dati_utente["ruolo"] != ruolo:
+            return None, "credenziali_errate"
+        # creazione dell'oggetto
+        if ruolo == "Medico":
+            oggetto = Medico(dati_utente['id'], dati_utente['nome'], dati_utente['cognome'], dati_utente['email'], dati_utente['password'])
+        elif ruolo == "Segretario":
+            oggetto = Segretario(dati_utente['id'], dati_utente['nome'], dati_utente['cognome'], dati_utente['email'], dati_utente['password'])
+        elif ruolo == "Amministratore":
+            oggetto = Amministratore(dati_utente['id'], dati_utente['nome'], dati_utente['cognome'], dati_utente['email'], dati_utente['password'])
+
+        return oggetto, "ok"
 
     def recuperaCredenziali(self, email):
         """Implementa il Requisito: Recupero credenziali tramite email.
         """
+        #si connette al database e prende la password corrispondente all'email passata
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT password FROM Dipendente WHERE email = ?", (email,))
@@ -150,7 +182,7 @@ class GestoreAnagrafica:
         conn.close()
 
         if row:
-            # Trovato: simuliamo l'invio dell'email
+            # Se troviamo l'email nel database: simuliamo l'invio dell'email con password
             password_recuperata = row['password']
             print(f"\n--- [SIMULAZIONE] EMAIL INVIATA A: {email} ---")
             print(f"Oggetto: Recupero credenziali Gestionale Clinica")
@@ -166,6 +198,7 @@ class GestoreAnagrafica:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute(
+                #aggiungiamo nel database
                 "INSERT INTO Paziente (cf, nome, cognome, email, telefono, isAgonista) VALUES (?, ?, ?, ?, ?, ?)",
                 (cf, nome, cognome, email, telefono, int(is_agonista)) # SQLite salva i boolean come 0 o 1
             )
@@ -174,17 +207,18 @@ class GestoreAnagrafica:
             # Se va a buon fine, restituisce l'oggetto Paziente
             return Paziente(cf, nome, cognome, email, telefono, is_agonista)
         except sqlite3.IntegrityError:
-            return None # Il Codice Fiscale esiste già
+            return None # Il Codice Fiscale esiste già, il CF e' unico
         except Exception as e:
             print(f"Errore DB in aggiungiPaziente: {e}")
             return None
 
-    def ricercaPaziente(self, parametro_ricerca):
+    def ricercaPaziente(self, parametro_ricerca: str) -> List[Paziente]:
         """Cerca un paziente per Codice Fiscale o per Cognome."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        # Cerca corrispondenze esatte per CF oppure simili per cognome
         cursor.execute(
+            #prendiamo tutto dalla tabella paziente se il CF corrisponde
+            #precisamente o il cognome e' simile
             "SELECT * FROM Paziente WHERE cf = ? OR cognome LIKE ?",
             (parametro_ricerca, f"%{parametro_ricerca}%")
         )
@@ -193,6 +227,7 @@ class GestoreAnagrafica:
         
         risultati = []
         for row in rows:
+            #creiamo gli oggetti paziente per ogni riga
             paz = Paziente(row['cf'], row['nome'], row['cognome'], row['email'], row['telefono'], bool(row['isAgonista']))
             risultati.append(paz)
         
@@ -200,6 +235,8 @@ class GestoreAnagrafica:
 
     def modificaSchedaPaziente(self, cf, nuovi_dati: dict):
         """Aggiorna i contatti e lo stato agonistico di un paziente esistente."""
+        #controllo sulla presenza delle chiavi presenti e non sui valori
+        #serve ad evitare un crash da parte della query
         if "email" not in nuovi_dati or "telefono" not in nuovi_dati or "isAgonista" not in nuovi_dati:
             return False
             
@@ -207,6 +244,7 @@ class GestoreAnagrafica:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute(
+                #modifico la riga del Paziente collegato al CF passato con i dati nuovi
                 "UPDATE Paziente SET email = ?, telefono = ?, isAgonista = ? WHERE cf = ?",
                 (nuovi_dati["email"], nuovi_dati["telefono"], int(nuovi_dati["isAgonista"]), cf)
             )
@@ -222,6 +260,7 @@ class GestoreAnagrafica:
         """Recupera tutte le specializzazioni dal DB per popolare la UI."""
         conn = self._get_connection()
         cursor = conn.cursor()
+        #recuper l'id e il nome di tutte le specializzazioni
         cursor.execute("SELECT id, nome FROM Specializzazione")
         rows = cursor.fetchall()
         conn.close()
@@ -229,9 +268,12 @@ class GestoreAnagrafica:
     
     def getDipendenteByEmail(self, email: str) -> int:
         """Recupera l'ID di un dipendente appena registrato tramite la sua email."""
+        # questo metodo sarebbe sostituibile con il cercaUtente restituendo solo l'id
         conn = self._get_connection()
         cursor = conn.cursor()
+        # seleziona solo l'id dove l'email e' uguale a quella passata
         cursor.execute("SELECT id FROM Dipendente WHERE email = ?", (email,))
-        row = cursor.fetchone()
+        row = cursor.fetchone() # ritorna il primo risultato trovato, che sara' unico (email e' unica)
         conn.close()
+        # ritorna l'id se row contiene qualcosa, altrimenti non esiste
         return row["id"] if row else -1

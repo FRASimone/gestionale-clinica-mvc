@@ -9,13 +9,14 @@ from views.registrazione_dipendente import RegistrazioneDipendenteView
 from views.gestione_ruoli_view import GestioneRuoliView
 
 class DashboardAmministratore(QWidget):
-    def __init__(self, nome_admin="Amministratore"):
+    def __init__(self, id_admin: int, nome_admin="Amministratore"):
         super().__init__()
+        self.id_admin = id_admin
         self.nome_admin = nome_admin
         
         self.setWindowTitle(f"Gestionale Clinica - Pannello Amministrazione")
         self.resize(1000, 700)
-        
+    
         self._build_ui()
 
     def _build_ui(self):
@@ -48,7 +49,7 @@ class DashboardAmministratore(QWidget):
         
         self.tabs.addTab(RegistrazioneDipendenteView(), "Gestione Dipendenti")
         
-        self.tabs.addTab(GestioneRuoliView(), "Gestione Ruoli e Permessi")
+        self.tabs.addTab(GestioneRuoliView(id_utente_loggato=self.id_admin), "Gestione Ruoli e Permessi")
         
         layout_principale.addWidget(self.tabs)
 
@@ -75,6 +76,6 @@ if __name__ == "__main__":
     # Applichiamo uno stile generico per renderla più moderna
     app.setStyle("Fusion") 
     
-    finestra = DashboardAmministratore(nome_admin="Admin Supremo")
+    finestra = DashboardAmministratore(id_admin=1, nome_admin="Admin Supremo")
     finestra.show()
     sys.exit(app.exec())

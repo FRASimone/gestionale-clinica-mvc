@@ -9,7 +9,6 @@ class Pagamento:
         self.__importo = importo
         self.__metodo = metodo
 
-        # Relazioni con altri oggetti (0..1 / 1, come da diagramma)
         self.__appuntamento = appuntamento   # Oggetto Appuntamento saldato
         self.__fattura = fattura             # Oggetto Fattura generata (può essere None finché non emessa)
 

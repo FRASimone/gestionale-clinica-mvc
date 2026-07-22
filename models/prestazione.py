@@ -1,4 +1,6 @@
 class Prestazione:
+    """Rappresenta un tipo di prestazione medica offerta dallo studio
+    (es. "Visita Cardiologica", 30 minuti, 80€)."""
     def __init__(self, id_prestazione: int, nomePrestazione: str, durataMinuti: int, costoBase: float):
         self.__id = id_prestazione
         self.__nomePrestazione = nomePrestazione

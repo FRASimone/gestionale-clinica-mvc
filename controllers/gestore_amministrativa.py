@@ -123,6 +123,8 @@ class GestoreAmministrativa:
 
     def getStoricoFatturePaziente(self, cf_paziente: str) -> list:
         """Recupera tutte le fatture emesse per un paziente."""
+        #recuperra dalla tabella Fattura i dati filtrando per CF e ordinando
+        #in moodo decrescente
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute(

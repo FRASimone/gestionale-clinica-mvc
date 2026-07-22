@@ -6,6 +6,10 @@ from models.valutazione_funzionale import ValutazioneFunzionale
 from datetime import datetime, timedelta
 
 class Appuntamento:
+    """ Classe centrale del progetto: collega Paziente, Medico, Prestazione,
+    e opzionalmente Memo/ValutazioneFunzionale (che infatti nascono a None,
+    perché all'inizio un appuntamento non ha ancora un promemoria inviato
+    né un referto — vengono "riempiti" più avanti nel ciclo di vita)."""
     def __init__(self, id_appuntamento: int, data: str, oraInizio: str, stato: str, 
                  paziente: Paziente, medico: Medico, prestazione: Prestazione, 
                  memo: Memo = None, valutazioneFunzionale: ValutazioneFunzionale = None):

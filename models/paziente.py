@@ -1,6 +1,6 @@
 class Paziente:
     def __init__(self, cf: str, nome: str, cognome: str, email: str, telefono: str, is_agonista: bool):
-        self.__cf = cf
+        self.__cf = cf # chiave naturale (Codice Fiscale) — è la Primary Key nel DB
         self.__nome = nome
         self.__cognome = cognome
         self.__email = email
@@ -32,6 +32,9 @@ class Paziente:
 
     def getListaFatture(self) -> list:
         return self.__listaFatture
+    
+    def aggiungiFattura(self, fattura) -> None:
+        self.__listaFatture.append(fattura)
     
     def aggiornaDati(self, nuovi_dati: dict) -> bool:
         """Aggiorna lo stato interno dell'oggetto."""

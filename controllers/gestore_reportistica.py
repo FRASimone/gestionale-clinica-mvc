@@ -172,7 +172,6 @@ class GestoreReportistica:
     
     def generaReportMensiliAutomatici(self, anno: int, mese: int) -> bool:
         """
-        Simula l'attore 'Tempo' dell'UML. 
         Esegue la generazione batch di tutti i report per il periodo indicato.
         """
         try:

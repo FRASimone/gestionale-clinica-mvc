@@ -20,6 +20,8 @@ def inizializza_database():
         cursor = conn.cursor()
 
         # Creazione Tabella Dipendente
+        # TEXT NOT NULL impedisce di salvare un dipendente se quel campo (es. nome o password) viene lasciato vuoto.
+        # UNIQUE garantisce che non ci siano 2 dipendenti con stessa email
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Dipendente (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +107,7 @@ def inizializza_database():
             )
         ''')
 
-        # Ricreazione Tabella Appuntamento (Allineata all'UML)
+        # Ricreazione Tabella Appuntamento 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS Appuntamento (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

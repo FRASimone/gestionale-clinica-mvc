@@ -2,6 +2,8 @@ from datetime import date
 from models.valutazione_funzionale import ValutazioneFunzionale
 
 class CartellaClinica:
+    """"Rappresenta il fascicolo clinico di un paziente: anamnesi generica più
+    la lista delle valutazioni funzionali (referti) associate nel tempo."""
     def __init__(self, id_cartella: int, dataCreazione: date, anamnesiGenerica: str):
         self.__id = id_cartella
         self.__dataCreazione = dataCreazione

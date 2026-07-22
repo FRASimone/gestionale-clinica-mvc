@@ -14,7 +14,7 @@ class LoginWindow(QWidget):
         self.setWindowTitle("Accesso - Gestionale Clinica")
         self.resize(400, 350)
         
-        # Inizializziamo il Controller. Ora la View ha accesso alla logica!
+        # Inizializziamo il Controller. Ora la View ha accesso alla logica
         self.gestore = GestoreAnagrafica()
         # Chiamiamo il metodo per costruire l'interfaccia
         self._build_ui()
@@ -33,7 +33,7 @@ class LoginWindow(QWidget):
         
         # Form per l'inserimento dati
         form_layout = QFormLayout()
-        
+        # crea la riga e le da un nome .input_email
         self.input_email = QLineEdit()
         self.input_email.setPlaceholderText("Inserisci la tua email")
         
@@ -43,7 +43,7 @@ class LoginWindow(QWidget):
         
         self.combo_ruolo = QComboBox()
         self.combo_ruolo.addItems(["Medico", "Segretario", "Amministratore"])
-        
+        # collega l'etichetta e il dato alla riga
         form_layout.addRow("Email:", self.input_email)
         form_layout.addRow("Password:", self.input_password)
         form_layout.addRow("Ruolo:", self.combo_ruolo)
@@ -52,13 +52,15 @@ class LoginWindow(QWidget):
 
         # Bottone principale di Login
         self.btn_login = QPushButton("Accedi")
+        # chiamata al metodo della view del login
         self.btn_login.clicked.connect(self.handle_login_click)
         layout.addWidget(self.btn_login)
 
-        # Bottone per il Recupero Password (Requisito non funzionale)
+        # Bottone per il Recupero Password (Requisito funz e non funz)
         self.btn_recupero = QPushButton("Hai dimenticato la password?")
         self.btn_recupero.setFlat(True) # Lo fa sembrare un link testuale invece di un bottone
         self.btn_recupero.setStyleSheet("color: red; text-decoration: underline;")
+        # connessione al metodo della view per il recupero
         self.btn_recupero.clicked.connect(self.handle_recupero_click)
         layout.addWidget(self.btn_recupero)
 
@@ -73,29 +75,30 @@ class LoginWindow(QWidget):
             return
 
         # La View chiede al Controller di verificare le credenziali
-        utente_loggato = self.gestore.login(email, password, ruolo)
+        utente_loggato, stato = self.gestore.login(email, password, ruolo)
 
-        if utente_loggato:
+        if stato == "ok":
             QMessageBox.information(self, "Successo", f"Accesso effettuato!\nBenvenuto: {utente_loggato.getInfo()}")
             
-            # --- ROUTING: APRIAMO LA DASHBOARD CORRETTA ---
+            # --- APRIAMO LA DASHBOARD CORRETTA ---
             if ruolo == "Medico":
-                # Passiamo l'ID e il cognome usando i getter appena creati
                 self.dashboard = DashboardMedico(id_medico=utente_loggato.getId(), nome_medico=utente_loggato.getCognome())
-            
             elif ruolo == "Segretario":
-                # La segreteria si aspetta l'intero oggetto loggato
                 self.dashboard = DashboardSegreteria(utente_loggato=utente_loggato)
-            
             elif ruolo == "Amministratore":
-                # Costruiamo la stringa unendo i due getter
                 nome_completo = f"{utente_loggato.getNome()} {utente_loggato.getCognome()}"
-                self.dashboard = DashboardAmministratore(nome_admin=nome_completo)
+                self.dashboard = DashboardAmministratore(
+                    id_admin=utente_loggato.getId(),
+                    nome_admin=nome_completo
+                )
+            # mostra la dashboard e chiude il login
+            self.dashboard.show()
+            self.close()
 
-            self.dashboard.show() # Mostra la nuova dashboard
-            self.close()          # Chiude la finestra di login
-            
-        else:
+        elif stato == "utente_inesistente":
+            QMessageBox.critical(self, "Errore di Autenticazione", "Nessun dipendente trovato con questa email.")
+
+        elif stato == "credenziali_errate":
             QMessageBox.critical(self, "Errore di Autenticazione", "Email, password o ruolo non corretti.")
 
     def handle_recupero_click(self):
@@ -104,7 +107,7 @@ class LoginWindow(QWidget):
         email, confermato = QInputDialog.getText(self, "Recupero Password", "Inserisci l'email del tuo account:")
         
         if confermato and email.strip():
-            # Passiamo la palla al Controller
+            # Passiamo al gestore Anagrafica l'email e chiamiamo il metodo di recupero
             successo, messaggio = self.gestore.recuperaCredenziali(email.strip())
             
             if successo:

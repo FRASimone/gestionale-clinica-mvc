@@ -1,6 +1,8 @@
 from datetime import datetime
 
 class Memo:
+    """Rappresenta un promemoria (memo) da inviare al paziente il giorno prima
+    dell'appuntamento."""
     def __init__(self, id_memo: int, dataInvioProgrammata: datetime, inviato: bool = False):
         self.__id = id_memo
         self.__dataInvioProgrammata = dataInvioProgrammata
