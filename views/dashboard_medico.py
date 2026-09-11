@@ -63,7 +63,9 @@ class DashboardMedico(QWidget):
             self.view_agenda.combo_medico.setCurrentIndex(index)
             self.view_agenda.combo_medico.setEnabled(False)
             # Carica direttamente l'agenda del giorno per il medico corrente
-            self.view_agenda.carica_appuntamenti()
+            # (mostra_avviso=False: è un caricamento automatico, non deve
+            # aprire popup se l'agenda del giorno è vuota)
+            self.view_agenda.carica_appuntamenti(mostra_avviso=False)
 
     def esegui_logout(self):
         """Gestisce la disconnessione sicura dall'area medica."""

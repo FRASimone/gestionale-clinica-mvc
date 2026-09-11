@@ -43,6 +43,7 @@ class DashboardSegreteria(QWidget):
         # Bottone dei Promemoria
         self.btn_memo = QPushButton("Forza Invio Memo")
         self.btn_memo.setStyleSheet("background-color: #F1C40F; color: black; font-weight: bold; padding: 8px;")
+        #bottone della view per la simulazione del promemoria
         self.btn_memo.clicked.connect(self.lancia_promemoria)
         header_layout.addWidget(self.btn_memo)
         
@@ -67,16 +68,22 @@ class DashboardSegreteria(QWidget):
         layout_principale.addWidget(tabs)
     
     def lancia_promemoria(self):
-        """Richiama il batch del Controller e avvisa l'utente."""
-        # Esegue il print nel terminale
-        self.gestore_clinica.inviaPromemoriaAutomatici() 
+        """Richiama il Controller e avvisa l'utente."""
+        # Esegue il print nel terminale, chiamata del gestore Clinica
+        conteggio = self.gestore_clinica.inviaPromemoriaAutomatici() 
         
-        # Mostra un pop-up per confermare che l'azione è partita
-        QMessageBox.information(
-            self, 
-            "Procedura Completata", 
-            "I promemoria per gli appuntamenti di domani sono stati elaborati.\nControlla il terminale per gli invii."
-        )
+        if conteggio == -1:
+            QMessageBox.critical(self, "Errore", "Si è verificato un errore durante l'invio dei promemoria.\nControlla il terminale per i dettagli.")
+        elif conteggio == 0:
+            QMessageBox.information(self, "Nessun Promemoria da Inviare", "Non ci sono appuntamenti di domani in attesa di notifica.")
+        else:
+            QMessageBox.information(
+                self, 
+                "Procedura Completata", 
+                f"{conteggio} promemoria inviati con successo.\nControlla il terminale per i dettagli."
+            )
+        
+        
     def esegui_logout(self):
         """Gestisce l'uscita dalla sessione e la chiusura della dashboard."""
         risposta = QMessageBox.question(

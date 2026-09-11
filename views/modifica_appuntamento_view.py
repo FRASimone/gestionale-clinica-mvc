@@ -15,6 +15,7 @@ class ModificaAppuntamentoView(QWidget):
         self.resize(350, 250)
         
         self._build_ui()
+        #viene chiamato subito il metodo per popolare i dati che verranno cambiati
         self._carica_dati_attuali()
 
     def _build_ui(self):
@@ -40,6 +41,7 @@ class ModificaAppuntamentoView(QWidget):
 
         btn_salva = QPushButton("Salva Modifiche")
         btn_salva.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 8px;")
+        #bottone Salva che se premuto chiama il metodo della view salva modifiche
         btn_salva.clicked.connect(self.salva_modifiche)
         layout.addWidget(btn_salva)
 
@@ -49,10 +51,13 @@ class ModificaAppuntamentoView(QWidget):
             self.label_paziente.setText(f"Paziente: {dati['nome']} {dati['cognome']}")
             
             # Impostiamo la data attuale nel widget
+            #dal database arrivano in forma di stringa, si trasforano in interi
+            #e poi si crea l oggetto QDate
             anno, mese, giorno = map(int, dati['data'].split('-'))
             self.input_data.setDate(QDate(anno, mese, giorno))
             
             # Impostiamo l'ora attuale nel widget
+            #la logica e' uguale per la data
             ore, minuti = map(int, dati['oraInizio'].split(':')[:2])
             self.input_ora.setTime(QTime(ore, minuti))
 
@@ -65,7 +70,8 @@ class ModificaAppuntamentoView(QWidget):
         qora = self.input_ora.time()
         nuova_ora_obj = time(qora.hour(), qora.minute())
 
-        # 3. Chiamiamo il metodo che ora restituisce DUE valori (tupla)
+        # 3. Chiamiamo il metodo del gestore Clinica modifica orario Appuntamento 
+        #passando la nuova data e la nuova ora
         successo, messaggio = self.gestore_clinica.modificaOrarioAppuntamento(
             self.id_appuntamento, nuova_data_obj, nuova_ora_obj
         )

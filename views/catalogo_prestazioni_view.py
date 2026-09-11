@@ -32,8 +32,9 @@ class CatalogoPrestazioniView(QWidget):
         
         layout.addLayout(form_layout)
         
-        btn_aggiungi_prest = QPushButton("Salva nel Catalogo (RF10)")
+        btn_aggiungi_prest = QPushButton("Salva nel Catalogo")
         btn_aggiungi_prest.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 8px;")
+        # chiamata al metodo della view aggiungi prestazione
         btn_aggiungi_prest.clicked.connect(self.handle_aggiungi_prestazione)
         layout.addWidget(btn_aggiungi_prest)
         
@@ -41,6 +42,7 @@ class CatalogoPrestazioniView(QWidget):
 
     def handle_aggiungi_prestazione(self):
         """Raccoglie i dati, controlla la validità e chiama il Controller."""
+        #raccola di dati
         nome = self.input_nome_prest.text().strip()
         durata_str = self.input_durata_prest.text().strip()
         costo_str = self.input_costo_prest.text().strip()
@@ -52,15 +54,17 @@ class CatalogoPrestazioniView(QWidget):
             
         # Controllo formato numeri
         try:
+            #cosi se l'utente scrive trenta catturo l'errore
             durata = int(durata_str)
+            #gli utenti potrebbero scrivere la , per separare ma python usa il .
             costo = float(costo_str.replace(',', '.'))
         except ValueError:
             QMessageBox.warning(self, "Errore di formato", "Durata deve essere un intero e Costo un numero valido.")
             return
             
-        # Chiamata al Controller Clinico (che abbiamo scritto nel passaggio precedente)
+        # Chiamata al Controller Clinico
         successo = self.gestore_clinica.aggiungiPrestazione(nome, durata, costo)
-        
+        #svuotiamo i campi
         if successo:
             QMessageBox.information(self, "Successo", f"Prestazione '{nome}' inserita nel catalogo!")
             self.input_nome_prest.clear()

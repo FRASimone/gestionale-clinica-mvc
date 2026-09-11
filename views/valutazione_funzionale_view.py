@@ -59,6 +59,7 @@ class ValutazioneFunzionaleView(QWidget):
         # Bottone di salvataggio
         btn_salva = QPushButton("Salva Valutazione e Completa Visita")
         btn_salva.setStyleSheet("background-color: #2E86C1; color: white; font-weight: bold; padding: 10px;")
+        # quando premuto chiama il metodo della view handle salvataggio
         btn_salva.clicked.connect(self.handle_salvataggio)
         layout.addWidget(btn_salva)
 
@@ -77,6 +78,7 @@ class ValutazioneFunzionaleView(QWidget):
             return
 
         try:
+            #chiamata al metodo del gestore Clinica per registrare la valutazione
             successo = self.gestore_clinica.registraValutazioneFunzionale(
             self.id_appuntamento, anomalie, note, overtraining, valutazione,
             id_medico=self.id_medico

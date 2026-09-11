@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QComboBox, 
                              QDateEdit, QTimeEdit, QPushButton, QMessageBox, QLabel, QDialog)
 from PyQt6.QtCore import QDate, QTime, Qt
-from datetime import date, time # Importiamo gli oggetti che vuole il tuo UML
+from datetime import date, time 
 
 from views.registrazione_paziente_dialog import RegistrazionePazienteDialog
 from controllers.gestore_clinica import GestoreClinica
@@ -15,6 +15,7 @@ class PrenotazioneView(QWidget):
         self.resize(450, 300)
         
         self._build_ui()
+        #chiamata iniziale per popolare la schermata
         self._popola_tendine()
 
     def _build_ui(self):
@@ -56,33 +57,35 @@ class PrenotazioneView(QWidget):
 
         # Bottone
         btn_prenota = QPushButton("Conferma Prenotazione")
+        #quando premuto si avvia il metodo della view handle prenotazione
         btn_prenota.clicked.connect(self.handle_prenotazione)
         layout.addWidget(btn_prenota)
 
     def _popola_tendine(self):
         """Richiede i dati al Controller e riempie le tendine."""
-        # 1. Pazienti
+        # 1. recupera tutti i pazienti
         for paz in self.gestore_clinica.getTuttiPazienti():
             testo_visibile = f"{paz['nome']} {paz['cognome']} ({paz['cf']})"
             # addItem(testo_mostrato, dato_nascosto)
             self.combo_paziente.addItem(testo_visibile, paz['cf'])
 
-        # 2. Medici
+        # 2. recupera tutti i medici
         for medico in self.gestore_clinica.getTuttiMedici():
             testo_visibile = f"Dott. {medico['nome']} {medico['cognome']}"
             self.combo_medico.addItem(testo_visibile, medico['id'])
 
-        # 3. Prestazioni
+        # 3. recupera tutte le prestazioni
         for prest in self.gestore_clinica.getPrestazioniDisponibili():
             # prest è un oggetto Model, usiamo il getter!
             info = prest.getInfoPrestazione()
             testo_visibile = f"{info['nomePrestazione']} ({info['durataMinuti']} min - {info['costoBase']}€)"
             self.combo_prestazione.addItem(testo_visibile, info['id'])
+            #mostra all utente il testo ma nasconde l'id che serve al DB
 
     def handle_prenotazione(self):
-        """Raccoglie i dati, li formatta come da UML e chiama il Controller."""
+        """Raccoglie i dati, li formatta e chiama il Controller."""
         
-        # Estraiamo i dati nascosti (userData) che corrispondono ai parametri dell'UML
+        # Estraiamo i dati nascosti (currentData) associati alla combo passati dal popola_tendine
         cf_paziente = self.combo_paziente.currentData()
         id_medico = self.combo_medico.currentData()
         id_prestazione = self.combo_prestazione.currentData()
@@ -92,14 +95,14 @@ class PrenotazioneView(QWidget):
             QMessageBox.warning(self, "Errore", "Assicurati di aver selezionato Paziente, Medico e Prestazione.")
             return
 
-        # Estraiamo Data e Ora e li convertiamo negli oggetti Python (date e time) per rispettare l'UML
+        # Estraiamo Data e Ora e li convertiamo negli oggetti Python (date e time)
         qdata = self.input_data.date()
         qora = self.input_ora.time()
         
         data_obj = date(qdata.year(), qdata.month(), qdata.day())
         ora_obj = time(qora.hour(), qora.minute())
 
-        # CHIAMATA AL CONTROLLER
+        # CHIAMATA AL CONTROLLER gestore Clinica
         successo, messaggio  = self.gestore_clinica.creaAppuntamento(data_obj, ora_obj, cf_paziente, id_medico, id_prestazione)
 
         if successo:

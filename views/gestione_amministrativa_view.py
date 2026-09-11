@@ -23,6 +23,7 @@ class GestioneAmministrativaView(QWidget):
         layout_ricerca.addWidget(self.input_cf)
 
         btn_cerca = QPushButton("Trova Appuntamenti da Saldare")
+        #bottone che se premuto chiama il metodo per mostrare i pagamenti 
         btn_cerca.clicked.connect(self.carica_pendenze)
         layout_ricerca.addWidget(btn_cerca)
         layout.addLayout(layout_ricerca)
@@ -41,7 +42,7 @@ class GestioneAmministrativaView(QWidget):
         
         layout_pagamento.addWidget(QLabel("Metodo Pagamento:"))
         self.combo_metodo_pagamento = QComboBox()
-        self.combo_metodo_pagamento.addItems(["Contanti", "Carta di Credito", "Bancomat", "Bonifico"])
+        self.combo_metodo_pagamento.addItems(["Contanti", "Carta di Credito"])
         layout_pagamento.addWidget(self.combo_metodo_pagamento)
 
         layout_pagamento.addWidget(QLabel("Emissione Fattura:"))
@@ -53,6 +54,7 @@ class GestioneAmministrativaView(QWidget):
 
         self.btn_paga_emetti = QPushButton("Registra Pagamento ed Emetti Fattura")
         self.btn_paga_emetti.setStyleSheet("background-color: #E67E22; color: white; font-weight: bold; padding: 12px;")
+        #metodo della view chiamato dopo aver selezionato il metodo di pagamento ed emissione fattura
         self.btn_paga_emetti.clicked.connect(self.processa_transazione)
         layout.addWidget(self.btn_paga_emetti)
 
@@ -61,7 +63,7 @@ class GestioneAmministrativaView(QWidget):
         if not cf:
             QMessageBox.warning(self, "Attenzione", "Inserisci il Codice Fiscale del paziente.")
             return
-
+        #chiama il gestore Amministrativo passando il CF inserito per trovare le
         pendenze = self.gestore_admin.getAppuntamentiDaSaldare(cf)
         self.tabella.setRowCount(0)
 
@@ -77,6 +79,7 @@ class GestioneAmministrativaView(QWidget):
             self.tabella.setItem(riga, 3, QTableWidgetItem(f"{app['costoBase']:.2f}"))
 
     def processa_transazione(self):
+        #controllo sulla riga selezionata
         riga_selezionata = self.tabella.currentRow()
         if riga_selezionata < 0:
             QMessageBox.warning(self, "Attenzione", "Seleziona un appuntamento dalla tabella per procedere al pagamento.")
@@ -88,11 +91,11 @@ class GestioneAmministrativaView(QWidget):
         metodo_pagamento = self.combo_metodo_pagamento.currentText()
         metodo_fattura = "Email" if "Email" in self.combo_metodo_fattura.currentText() else "Stampa"
 
-        # Esecuzione RF17 (Pagamento)
+        # Esecuzione Pagamento, chiamata al gestore Amministrativa
         id_pagamento = self.gestore_admin.registraPagamento(id_appuntamento, importo, metodo_pagamento)
         
         if id_pagamento: # Se il pagamento è andato a buon fine e abbiamo ricevuto l'ID
-            # Esecuzione RF18 (Fatturazione)
+            # a questo punto chiamo il gestore Ammin per emettere la fattura
             fattura_emessa = self.gestore_admin.emettiFattura(id_pagamento, metodo_fattura)
             
             if fattura_emessa:

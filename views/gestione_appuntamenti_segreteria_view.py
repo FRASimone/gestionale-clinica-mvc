@@ -16,6 +16,7 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         self.resize(700, 450)
         
         self._build_ui()
+        #metodo iniziale per popolare la tendina
         self._popola_medici()
 
     def _build_ui(self):
@@ -34,6 +35,7 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         filtri_layout.addWidget(self.input_data)
 
         btn_cerca = QPushButton("Cerca Appuntamenti")
+        #se si preme il bottone Cerca Appuntamenti si chiama il metodo della veiw carica
         btn_cerca.clicked.connect(self.carica_appuntamenti)
         filtri_layout.addWidget(btn_cerca)
         layout.addLayout(filtri_layout)
@@ -50,22 +52,26 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         self.tabella.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         layout.addWidget(self.tabella)
 
-        # --- Bottoni Amministrativi (RF13 e RF14) ---
+        # --- Bottoni Amministrativi ---
         bottoni_layout = QHBoxLayout()
         
         self.btn_modifica = QPushButton("Modifica Orario/Data")
         self.btn_modifica.setStyleSheet("background-color: #F39C12; color: white; font-weight: bold; padding: 10px;")
+        # bottone per modificare che chiama il metodo della view apri modifica
         self.btn_modifica.clicked.connect(self.apri_modifica)
         bottoni_layout.addWidget(self.btn_modifica)
 
         self.btn_cancella = QPushButton("Cancella Appuntamento")
         self.btn_cancella.setStyleSheet("background-color: #E74C3C; color: white; font-weight: bold; padding: 10px;")
+        #bottone che se premuto chiama il metodo della view cancella selezionato
         self.btn_cancella.clicked.connect(self.cancella_selezionato)
         bottoni_layout.addWidget(self.btn_cancella)
 
         layout.addLayout(bottoni_layout)
 
     def _popola_medici(self):
+        #servre a popolare il menu a tendina per selezionare il medico
+        #e vederne gli appuntamenti
         medici = self.gestore_clinica.getTuttiMedici()
         for medico in medici:
             self.combo_medico.addItem(f"Dott. {medico['nome']} {medico['cognome']}", medico['id'])
@@ -75,10 +81,15 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         qdata = self.input_data.date()
         data_obj = date(qdata.year(), qdata.month(), qdata.day())
 
-        # Riutilizziamo lo stesso metodo del Controller usato per l'Agenda!
+        # utilizziamo metodo del Controller Clinica usato per l'Agenda
         appuntamenti = self.gestore_clinica.getAgendaMedico(id_medico, data_obj)
-
         self.tabella.setRowCount(0)
+        #controllo che si siano appuntamenti
+        if not appuntamenti:
+            # Opzionale: mostra un popup che avvisa l'utente
+            QMessageBox.information(self, "Agenda", "Nessun appuntamento trovato per questa data.")
+            return
+        #se ci sono popolo la tabella
         for riga, app in enumerate(appuntamenti):
             self.tabella.insertRow(riga)
             paziente_completo = f"{app['nome_paziente']} {app['cognome_paziente']} ({app['cf_paziente']})"
@@ -90,29 +101,36 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
             self.tabella.setItem(riga, 4, QTableWidgetItem(str(app['stato'])))
 
     def apri_modifica(self):
+        #controlla che sia stata selezionata una riga
         riga_selezionata = self.tabella.currentRow()
         if riga_selezionata < 0:
             QMessageBox.warning(self, "Attenzione", "Seleziona un appuntamento da modificare.")
             return
-
+        
+       #controlla che lo stato non sia completato o annullato
         stato = self.tabella.item(riga_selezionata, 4).text()
         if stato == "Completato":
             QMessageBox.warning(self, "Errore", "Impossibile modificare un appuntamento già completato dal medico.")
             return
-
+        if stato == "Annullato":
+            QMessageBox.warning(self, "Errore", "Impossibile modificare un appuntamento annullato.")
+            return
+        #apriamo la view della ModificaAppuntamento
         id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
         self.finestra_modifica = ModificaAppuntamentoView(id_appuntamento=id_selezionato)
         self.finestra_modifica.show()
 
     def cancella_selezionato(self):
+        #controllo che sia stata selezionata una riga
         riga_selezionata = self.tabella.currentRow()
         if riga_selezionata < 0:
             QMessageBox.warning(self, "Attenzione", "Seleziona un appuntamento da annullare.")
             return
-
+        
+        #recupero lo stato
         stato = self.tabella.item(riga_selezionata, 4).text()
         
-        # Nuovi controlli di sicurezza basati sugli stati
+        # non posso cancellare un appuntamento gia annullato o completato
         if stato == "Completato":
             QMessageBox.warning(self, "Errore", "Impossibile annullare un appuntamento già completato dal medico.")
             return
@@ -130,7 +148,7 @@ class GestioneAppuntamentiSegreteriaView(QWidget):
         if risposta == QMessageBox.StandardButton.Yes:
             id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
             
-            # CHIAMIAMO IL TUO METODO ORIGINALE
+            # chiamata al metodo del gestore Clinica 
             successo = self.gestore_clinica.annullaAppuntamento(id_selezionato)
             
             if successo:

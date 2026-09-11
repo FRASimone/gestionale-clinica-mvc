@@ -34,8 +34,11 @@ class Appuntamento:
         """
         Metodo statico: calcola l'ora di fine senza dover istanziare l'oggetto.
         """
-        formato = "%H:%M"
+        #calcola ora fine sommando la durata all ora di inizio
+        formato = "%H:%M" #dal formato capisce qual e' l ora e quale i minuti
+        #converte un testo in oggetto per farci calcoli per poi ritrasformarlo in testo
         ora_inizio_obj = datetime.strptime(ora_inizio, formato)
+        #timedelta serve a dire che quell intero passato sono i minuti
         ora_fine_obj = ora_inizio_obj + timedelta(minutes=durata_minuti)
         return ora_fine_obj.strftime(formato)
 

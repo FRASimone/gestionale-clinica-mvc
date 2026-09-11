@@ -80,7 +80,7 @@ class SchedaPazienteView(QWidget):
         self.tabella_storico.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.tabella_storico.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows) # Permette di selezionare un'intera riga
         layout.addWidget(self.tabella_storico)
-        
+        #l'anamnesi generica puo esser vista solo dal medico
         if self.ruolo_utente == "Medico":
             self.btn_leggi_referto = QPushButton("Leggi Referto (Valutazione Funzionale)")
             self.btn_leggi_referto.setStyleSheet("background-color: #2ECC71; color: white; font-weight: bold; padding: 5px;")
@@ -88,6 +88,7 @@ class SchedaPazienteView(QWidget):
             layout.addWidget(self.btn_leggi_referto)
             self.btn_cartella_clinica = QPushButton("Apri Anamnesi")
             self.btn_cartella_clinica.setStyleSheet("background-color: #16A085; color: white; font-weight: bold; padding: 8px;")
+            #bottone per aprire l'anamnesi a cui e' collegato il metodo della view apri apri cartella
             self.btn_cartella_clinica.clicked.connect(self.apri_cartella_clinica)
             layout.addWidget(self.btn_cartella_clinica)
      
@@ -103,7 +104,9 @@ class SchedaPazienteView(QWidget):
         layout.addWidget(self.tabella_fatture)
         
     def apri_cartella_clinica(self):
+        #il metodo apre la view cartella_clinica_dialog
         dialog = CartellaClinicaDialog(cf_paziente=self.cf_paziente, ruolo_utente=self.ruolo_utente, parent=self)
+        #.exec apre il dialog in modo modale, blocca l'interazone finche non la chiudi
         dialog.exec()
         
     def _carica_dati_paziente(self):

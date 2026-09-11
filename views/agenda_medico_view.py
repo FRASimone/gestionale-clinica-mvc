@@ -18,6 +18,8 @@ class AgendaMedicoView(QWidget):
         self.resize(600, 400)
         
         self._build_ui()
+        # popola la tendina, serve poi nella dashboard per selezionare il medico
+        # che sta usando la dashboard e bloccare la selezione combo box
         self._popola_medici()
 
     def _build_ui(self):
@@ -37,7 +39,8 @@ class AgendaMedicoView(QWidget):
         filtri_layout.addWidget(self.input_data)
 
         btn_cerca = QPushButton("Carica Agenda")
-        btn_cerca.clicked.connect(self.carica_appuntamenti)
+        # lambda esplicita: click manuale -> mostra sempre l'avviso se vuoto
+        btn_cerca.clicked.connect(lambda: self.carica_appuntamenti(mostra_avviso=True))
         filtri_layout.addWidget(btn_cerca)
 
         layout.addLayout(filtri_layout)
@@ -58,9 +61,10 @@ class AgendaMedicoView(QWidget):
 
         layout.addWidget(self.tabella)
         
-        # --- NUOVO BOTTONE SOTTO LA TABELLA APPUNTAMENTI---
+        # --- BOTTONE SOTTO LA TABELLA APPUNTAMENTI---
         self.btn_avvia_visita = QPushButton("Avvia Visita (Compila Referto)")
         self.btn_avvia_visita.setStyleSheet("background-color: #27AE60; color: white; font-weight: bold; padding: 10px;")
+        #se il bottone viene premuto si avvia il metodo apri valutazione della vi
         self.btn_avvia_visita.clicked.connect(self.apri_valutazione)
         layout.addWidget(self.btn_avvia_visita)
         
@@ -70,31 +74,36 @@ class AgendaMedicoView(QWidget):
         layout.addWidget(self.btn_cartella_clinica)
 
     def _popola_medici(self):
-        """Metodo di supporto per riempire la tendina dei medici (Simula il Login)."""
+        """Metodo di supporto per riempire la tendina dei medici."""
         medici = self.gestore_clinica.getTuttiMedici()
         for medico in medici:
             testo = f"Dott. {medico['nome']} {medico['cognome']}"
             self.combo_medico.addItem(testo, medico['id'])
 
-    def carica_appuntamenti(self):
-        """Chiama il Controller e riempie la tabella con i risultati."""
+    def carica_appuntamenti(self, mostra_avviso=True):
+        """Chiama il Controller e riempie la tabella con i risultati.
+        mostra_avviso=False viene usato per il precaricamento automatico
+        all'apertura della dashboard, per non mostrare popup inutili al login."""
         id_medico = self.combo_medico.currentData()
         if not id_medico:
-            QMessageBox.warning(self, "Attenzione", "Nessun medico selezionato.")
+            if mostra_avviso:
+                QMessageBox.warning(self, "Attenzione", "Nessun medico selezionato.")
             return
 
         # Estraiamo la data e la convertiamo nell'oggetto Python "date" come richiesto dall'UML
         qdata = self.input_data.date()
         data_obj = date(qdata.year(), qdata.month(), qdata.day())
 
-        # CHIAMATA AL CONTROLLER
+        # CHIAMATA AL CONTROLLER Clinica con il metodo getAgendaMedico
         appuntamenti = self.gestore_clinica.getAgendaMedico(id_medico, data_obj)
 
         # Puliamo la tabella prima di inserire i nuovi dati
         self.tabella.setRowCount(0)
 
         if not appuntamenti:
-            # Se la lista è vuota, usciamo 
+            # Se la lista è vuota, avvisiamo solo se richiesto esplicitamente
+            if mostra_avviso:
+                QMessageBox.information(self, "Agenda", "Nessun appuntamento trovato per questa data.")
             return
 
        # Riempiamo la tabella riga per riga
@@ -129,15 +138,18 @@ class AgendaMedicoView(QWidget):
             QMessageBox.warning(self, "Attenzione", "Seleziona un paziente dall'agenda per avviare la visita.")
             return
             
-        # Controllo 2: La visita è già stata fatta? (Leggiamo la colonna 4 "Stato")
+        # Controllo 2: La visita è già stata fatta o è stata annullata? (colonna 4 "Stato")
         stato = self.tabella.item(riga_selezionata, 4).text()
         if stato == "Completato":
             QMessageBox.information(self, "Info", "Questa visita è già stata refertata e completata.")
             return
+        if stato == "Annullato":
+            QMessageBox.warning(self, "Attenzione", "Impossibile avviare la visita: l'appuntamento è stato annullato.")
+            return
 
         # Estraiamo l'ID nascosto dalla colonna 0
         id_selezionato = int(self.tabella.item(riga_selezionata, 0).text())
-        
+        #prendiamo il dato nascosto dall elemento selezionato, ovvero l'id dal combo
         id_medico_corrente = self.combo_medico.currentData()
         # Apriamo la finestra passandole l'ID!
         self.finestra_visita = ValutazioneFunzionaleView(id_appuntamento=id_selezionato, id_medico=id_medico_corrente)
