@@ -28,12 +28,13 @@ class GestoreReportistica:
     # --- METODI DI GENERAZIONE REPORT ---
 
     def generaReportPazienti(self, anno: int, mese: int = 0) -> Report:
-        """RF19: Calcola il numero di pazienti unici visitati nel periodo."""
+        """RF20: Calcola il numero di pazienti visitati nel periodo."""
         conn = self._get_connection()
         cursor = conn.cursor()
         
         # Uso strftime per estrarre anno e mese dalla stringa ISO di SQLite
-        query = "SELECT COUNT(id) as totale_pazienti FROM Appuntamento WHERE stato = 'Completato' AND strftime('%Y', data) = ?"
+        query = """SELECT COUNT(id) AS visite, COUNT(DISTINCT cf_paziente) AS pazienti_unici
+           FROM Appuntamento WHERE stato = 'Completato' AND strftime('%Y', data) = ?"""
         params = [str(anno)]
         
         if mese > 0:
@@ -43,7 +44,8 @@ class GestoreReportistica:
         cursor.execute(query, params)
         risultato = cursor.fetchone()
         
-        dati = {"totale_pazienti_visitati": risultato['totale_pazienti']}
+        dati = {"visite_completate": risultato['visite'],
+        "pazienti_unici": risultato['pazienti_unici']}
         report = self._salva_e_crea_oggetto(cursor, anno, mese, "Pazienti", dati)
         
         conn.commit()

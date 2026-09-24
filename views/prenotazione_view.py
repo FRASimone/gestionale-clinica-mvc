@@ -107,7 +107,7 @@ class PrenotazioneView(QWidget):
 
         if successo:
             QMessageBox.information(self, "Successo", messaggio)
-            self.close() # Chiude la finestra
+            self._reset_form() # Chiude la finestra
         else:
             QMessageBox.warning(self, "Impossibile Prenotare", messaggio)
 
@@ -128,6 +128,13 @@ class PrenotazioneView(QWidget):
             indice = self.combo_paziente.findData(nuovo_cf)
             if indice != -1:
                 self.combo_paziente.setCurrentIndex(indice)
+
+    def _reset_form(self):
+        self.input_data.setDate(QDate.currentDate())
+        self.input_ora.setTime(QTime(9, 0))
+        for combo in (self.combo_paziente, self.combo_medico, self.combo_prestazione):
+            if combo.count() > 0:
+                combo.setCurrentIndex(0)
                 
                 
 # --- TEST DIRETTO DELLA VIEW ---

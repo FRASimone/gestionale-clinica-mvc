@@ -118,7 +118,9 @@ class GestoreClinica:
         """Crea un appuntamento calcolando la durata e bloccando le sovrapposizioni."""
         data_str = data.isoformat() #prende la data e lo trasforma in testo
         ora_str = ora.strftime("%H:%M") #string format time
-        
+        if datetime.combine(data, ora) < datetime.now():
+            return False, "Impossibile prenotare un appuntamento in un orario già passato."
+
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -227,14 +229,15 @@ class GestoreClinica:
         """Aggiorna data e ora di un appuntamento esistente, verificando prima i conflitti orari."""
         data_str = nuovaData.isoformat()
         ora_str = nuovaOra.strftime("%H:%M")
-        
+        if datetime.combine(nuovaData, nuovaOra) < datetime.now():
+            return False, "Impossibile prenotare un appuntamento in un orario già passato."
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
             
              # --- FASE 0: Recupero dei dati attuali dell'appuntamento ---
             cursor.execute("""
-                SELECT A.cf_paziente, A.id_medico, A.stato, P.durataMinuti
+                SELECT A.cf_paziente, A.id_medico, A.stato, A.data, A.oraInizio, A.id_memo, P.durataMinuti
                 FROM Appuntamento A
                 JOIN Prestazione P ON A.id_prestazione = P.id
                 WHERE A.id = ?
@@ -293,9 +296,12 @@ class GestoreClinica:
                     return False, f"Conflitto Paziente: Ha già una visita (Dott. {app['cognome_medico']}) dalle {app['oraInizio']} alle {fine_es_str}."
             
             # --- FASE 3: Aggiornamento ---
+            vecchio_memo = app_corrente['id_memo']
             #a differenza della creazione qui al posto di insert si fa un update
-            cursor.execute("UPDATE Appuntamento SET data = ?, oraInizio = ? WHERE id = ?", 
+            cursor.execute("UPDATE Appuntamento SET data = ?, oraInizio = ?, id_memo = NULL WHERE id = ?", 
                            (data_str, ora_str, idAppuntamento))
+            if vecchio_memo:  # se l appuntamento aveva un memo viene eliminato
+                cursor.execute("DELETE FROM Memo WHERE id = ?", (vecchio_memo,))
             
             conn.commit()
             conn.close()
