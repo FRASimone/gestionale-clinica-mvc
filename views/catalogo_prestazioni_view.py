@@ -63,15 +63,15 @@ class CatalogoPrestazioniView(QWidget):
             return
             
         # Chiamata al Controller Clinico
-        successo = self.gestore_clinica.aggiungiPrestazione(nome, durata, costo)
+        successo, messaggio = self.gestore_clinica.aggiungiPrestazione(nome, durata, costo)
         #svuotiamo i campi
         if successo:
-            QMessageBox.information(self, "Successo", f"Prestazione '{nome}' inserita nel catalogo!")
+            QMessageBox.information(self, "Successo", messaggio)
             self.input_nome_prest.clear()
             self.input_durata_prest.clear()
             self.input_costo_prest.clear()
         else:
-            QMessageBox.warning(self, "Errore", "Si è verificato un problema durante l'inserimento.")
+            QMessageBox.warning(self, "Errore", messaggio)
 
 # --- BLOCCO DI TEST INDIPENDENTE ---
 if __name__ == "__main__":

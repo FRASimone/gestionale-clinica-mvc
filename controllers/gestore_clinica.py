@@ -345,24 +345,34 @@ class GestoreClinica:
         agenda = [dict(row) for row in rows]
         return agenda
     
-    def aggiungiPrestazione(self, nome: str, durata: int, costo: float) -> bool:
-        """Inserisce una nuova prestazione nel catalogo."""
+    def aggiungiPrestazione(self, nome: str, durata: int, costo: float) -> tuple:
+        """Inserisce una nuova prestazione nel catalogo, evitando duplicati per nome."""
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
+
+            # Controllo duplicati: stesso nome, ignorando maiuscole/minuscole
+            cursor.execute(
+                "SELECT id FROM Prestazione WHERE LOWER(nomePrestazione) = LOWER(?)",
+                (nome,)
+            )
+            if cursor.fetchone():
+                conn.close()
+                return False, f"Esiste già una prestazione chiamata '{nome}' nel catalogo."
+
             #aggiungiamo la prestazione al DB
             cursor.execute(
                 "INSERT INTO Prestazione (nomePrestazione, durataMinuti, costoBase) VALUES (?, ?, ?)",
                 (nome, durata, costo)
             )
-            
+
             conn.commit()
             conn.close()
-            return True
+            return True, "Prestazione inserita correttamente."
         except sqlite3.Error as e:
             print(f"Errore DB in aggiungiPrestazione: {e}")
-            return False
-    
+            return False, "Errore del database durante l'inserimento."
+        
     def _verifica_ruolo_da_id(self, id_dipendente: int, ruoli_ammessi: list):
             """Verifica il ruolo REALE dell'utente consultando il database,
             invece di fidarsi di una stringa passata dalla UI."""
@@ -381,7 +391,6 @@ class GestoreClinica:
                                    prevOvertraining: str, valutazioneClinica: int, id_medico: int) -> bool:
         """
         Crea la valutazione funzionale e la collega all'appuntamento.
-        (Rispetta esattamente i parametri stringa/int del tuo UML).
         """
         # _verifica_ruolo_da_id — verifica il ruolo VERO leggendolo dal DB
         self._verifica_ruolo_da_id(id_medico, ["Medico"])
@@ -391,7 +400,6 @@ class GestoreClinica:
 
             # Verifica lato server: l'appuntamento deve esistere ed essere ancora "Programmato".
             # Blocca la refertazione di appuntamenti Annullati o già Completati,
-            # indipendentemente da eventuali controlli (bypassabili) fatti dalla UI.
             cursor.execute("SELECT stato FROM Appuntamento WHERE id = ?", (idAppuntamento,))
             riga_stato = cursor.fetchone()
             if not riga_stato or riga_stato['stato'] != 'Programmato':
