@@ -94,7 +94,6 @@ class GestoreAmministrativa:
             return False
 
         # 2. Generazione Numero Fattura univoco (es. FATT-2026-001)
-        # (In un DB reale si userebbe un contatore o una logica più complessa)
         numero_fattura = f"FATT-{datetime.now().year}-{id_pagamento:04d}"
         data_ora_attuale = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
