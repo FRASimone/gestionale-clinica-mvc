@@ -39,16 +39,18 @@ class GestoreAnagrafica:
         try:
             # chiamata al metodo di connessione
             conn = self._get_connection()
-            cursor = conn.cursor()
-            #la libreria sqlite3 è programmata per cercare i ? all'interno della stringa SQL.
-            # inoltre evita SQL Injection 
-            cursor.execute(
-                "INSERT INTO Dipendente (nome, cognome, email, password, ruolo) VALUES (?, ?, ?, ?, ?)",
-                (nome, cognome, email, password, ruolo)
-            )
-            conn.commit() # conferma finale
-            conn.close() # chiusura connessione
-            return True, f"Registrazione completata. (Codice inviato: {codice_verifica})"
+            try:
+                cursor = conn.cursor()
+                #la libreria sqlite3 è programmata per cercare i ? all'interno della stringa SQL.
+                # inoltre evita SQL Injection 
+                cursor.execute(
+                    "INSERT INTO Dipendente (nome, cognome, email, password, ruolo) VALUES (?, ?, ?, ?, ?)",
+                    (nome, cognome, email, password, ruolo)
+                )
+                conn.commit() # conferma finale
+                return True, f"Registrazione completata. (Codice inviato: {codice_verifica})"
+            finally:
+                conn.close() # chiusura connessione
         except sqlite3.IntegrityError: #errore di unicita'
             return False, "Errore: Questa email è già presente nel sistema."
         except Exception as e:
@@ -59,31 +61,32 @@ class GestoreAnagrafica:
         #dall'id modifica il ruolo corrispondente nel nuovo passato
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
-
-            cursor.execute("SELECT ruolo FROM Dipendente WHERE id = ?", (id_dipendente,))
-            row = cursor.fetchone()
-            if not row:
-                conn.close()
-                return False
-            ruolo_attuale = row["ruolo"]
-
-            cursor.execute(
-                "UPDATE Dipendente SET ruolo = ? WHERE id = ?",
-                (nuovo_ruolo, id_dipendente)
-            )
-            righe_aggiornate = cursor.rowcount   # <-- catturato SUBITO dopo la UPDATE
-            #serve a vedere se il cambio e' andato a buon fine
-
-            if ruolo_attuale == "Medico" and nuovo_ruolo != "Medico":
+            try:
+                cursor = conn.cursor()
+    
+                cursor.execute("SELECT ruolo FROM Dipendente WHERE id = ?", (id_dipendente,))
+                row = cursor.fetchone()
+                if not row:
+                    return False
+                ruolo_attuale = row["ruolo"]
+    
                 cursor.execute(
-                    "DELETE FROM Medico_Specializzazione WHERE id_medico = ?",
-                    (id_dipendente,)
+                    "UPDATE Dipendente SET ruolo = ? WHERE id = ?",
+                    (nuovo_ruolo, id_dipendente)
                 )
-
-            conn.commit()
-            conn.close()
-            return righe_aggiornate > 0
+                righe_aggiornate = cursor.rowcount   # <-- catturato SUBITO dopo la UPDATE
+                #serve a vedere se il cambio e' andato a buon fine
+    
+                if ruolo_attuale == "Medico" and nuovo_ruolo != "Medico":
+                    cursor.execute(
+                        "DELETE FROM Medico_Specializzazione WHERE id_medico = ?",
+                        (id_dipendente,)
+                    )
+    
+                conn.commit()
+                return righe_aggiornate > 0
+            finally:
+                conn.close()
         except Exception as e:
             print(f"Errore aggiornamento ruolo: {e}")
             return False
@@ -92,11 +95,13 @@ class GestoreAnagrafica:
         """Recupera la lista di tutti i dipendenti per la schermata di Gestione Ruoli."""
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            #recupera le informazioni dei dipendenti dalla tabella Dipendente
-            cursor.execute("SELECT id, nome, cognome, email, ruolo FROM Dipendente")
-            rows = cursor.fetchall()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                #recupera le informazioni dei dipendenti dalla tabella Dipendente
+                cursor.execute("SELECT id, nome, cognome, email, ruolo FROM Dipendente")
+                rows = cursor.fetchall()
+            finally:
+                conn.close()
             
             risultati = []
             for row in rows:
@@ -119,15 +124,17 @@ class GestoreAnagrafica:
         """
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            
-            # Inseriamo il collegamento nella tabella ponte
-            cursor.execute(
-                "INSERT INTO Medico_Specializzazione (id_medico, id_specializzazione) VALUES (?, ?)",
-                (idMedico, idSpecializzazione)
-            )
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                
+                # Inseriamo il collegamento nella tabella ponte
+                cursor.execute(
+                    "INSERT INTO Medico_Specializzazione (id_medico, id_specializzazione) VALUES (?, ?)",
+                    (idMedico, idSpecializzazione)
+                )
+                conn.commit()
+            finally:
+                conn.close()
             
             print(f"--- [SISTEMA] Specializzazione {idSpecializzazione} assegnata al Medico {idMedico} ---")
             return True
@@ -145,10 +152,12 @@ class GestoreAnagrafica:
         # metodo che si connette al database recupera tutte le informazioni
         # relative all'email e ritorna il primo risultato (unico)
         conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Dipendente WHERE email = ?", (email,))
-        row = cursor.fetchone()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Dipendente WHERE email = ?", (email,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
         return dict(row) if row else None
 
     def login(self, email, password, ruolo):
@@ -176,10 +185,12 @@ class GestoreAnagrafica:
         """
         #si connette al database e prende la password corrispondente all'email passata
         conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT password FROM Dipendente WHERE email = ?", (email,))
-        row = cursor.fetchone()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT password FROM Dipendente WHERE email = ?", (email,))
+            row = cursor.fetchone()
+        finally:
+            conn.close()
 
         if row:
             # Se troviamo l'email nel database: simuliamo l'invio dell'email con password
@@ -196,14 +207,16 @@ class GestoreAnagrafica:
         """Inserisce un nuovo paziente nel database."""
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                #aggiungiamo nel database
-                "INSERT INTO Paziente (cf, nome, cognome, email, telefono, isAgonista) VALUES (?, ?, ?, ?, ?, ?)",
-                (cf, nome, cognome, email, telefono, int(is_agonista)) # SQLite salva i boolean come 0 o 1
-            )
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    #aggiungiamo nel database
+                    "INSERT INTO Paziente (cf, nome, cognome, email, telefono, isAgonista) VALUES (?, ?, ?, ?, ?, ?)",
+                    (cf, nome, cognome, email, telefono, int(is_agonista)) # SQLite salva i boolean come 0 o 1
+                )
+                conn.commit()
+            finally:
+                conn.close()
             # Se va a buon fine, restituisce l'oggetto Paziente
             return Paziente(cf, nome, cognome, email, telefono, is_agonista)
         except sqlite3.IntegrityError:
@@ -215,15 +228,17 @@ class GestoreAnagrafica:
     def ricercaPaziente(self, parametro_ricerca: str) -> List[Paziente]:
         """Cerca un paziente per Codice Fiscale o per Cognome."""
         conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            #prendiamo tutto dalla tabella paziente se il CF corrisponde
-            #precisamente o il cognome e' simile
-            "SELECT * FROM Paziente WHERE cf = ? OR cognome LIKE ?",
-            (parametro_ricerca, f"%{parametro_ricerca}%")
-        )
-        rows = cursor.fetchall()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                #prendiamo tutto dalla tabella paziente se il CF corrisponde
+                #precisamente o il cognome e' simile
+                "SELECT * FROM Paziente WHERE cf = ? OR cognome LIKE ?",
+                (parametro_ricerca, f"%{parametro_ricerca}%")
+            )
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
         
         risultati = []
         for row in rows:
@@ -242,15 +257,17 @@ class GestoreAnagrafica:
             
         try:
             conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                #modifico la riga del Paziente collegato al CF passato con i dati nuovi
-                "UPDATE Paziente SET email = ?, telefono = ?, isAgonista = ? WHERE cf = ?",
-                (nuovi_dati["email"], nuovi_dati["telefono"], int(nuovi_dati["isAgonista"]), cf)
-            )
-            conn.commit()
-            righe_aggiornate = cursor.rowcount
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    #modifico la riga del Paziente collegato al CF passato con i dati nuovi
+                    "UPDATE Paziente SET email = ?, telefono = ?, isAgonista = ? WHERE cf = ?",
+                    (nuovi_dati["email"], nuovi_dati["telefono"], int(nuovi_dati["isAgonista"]), cf)
+                )
+                conn.commit()
+                righe_aggiornate = cursor.rowcount
+            finally:
+                conn.close()
             return righe_aggiornate > 0
         except Exception as e:
             print(f"Errore DB in modificaScheda: {e}")
@@ -259,21 +276,25 @@ class GestoreAnagrafica:
     def getTutteSpecializzazioni(self) -> list:
         """Recupera tutte le specializzazioni dal DB per popolare la UI."""
         conn = self._get_connection()
-        cursor = conn.cursor()
-        #recuper l'id e il nome di tutte le specializzazioni
-        cursor.execute("SELECT id, nome FROM Specializzazione")
-        rows = cursor.fetchall()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            #recuper l'id e il nome di tutte le specializzazioni
+            cursor.execute("SELECT id, nome FROM Specializzazione")
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
         return [{"id": row["id"], "nome": row["nome"]} for row in rows]
     
     def getDipendenteByEmail(self, email: str) -> int:
         """Recupera l'ID di un dipendente appena registrato tramite la sua email."""
         # questo metodo sarebbe sostituibile con il cercaUtente restituendo solo l'id
         conn = self._get_connection()
-        cursor = conn.cursor()
-        # seleziona solo l'id dove l'email e' uguale a quella passata
-        cursor.execute("SELECT id FROM Dipendente WHERE email = ?", (email,))
-        row = cursor.fetchone() # ritorna il primo risultato trovato, che sara' unico (email e' unica)
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            # seleziona solo l'id dove l'email e' uguale a quella passata
+            cursor.execute("SELECT id FROM Dipendente WHERE email = ?", (email,))
+            row = cursor.fetchone() # ritorna il primo risultato trovato, che sara' unico (email e' unica)
+        finally:
+            conn.close()
         # ritorna l'id se row contiene qualcosa, altrimenti non esiste
         return row["id"] if row else -1

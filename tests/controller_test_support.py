@@ -127,7 +127,7 @@ class TestGestoreAnagrafica(ControllerDatabaseTestCase):
 
     def test_modifica_ruolo_aggiorna_e_rimuove_specializzazioni_mediche(self):
         id_medico = self.inserisci_dipendente()
-        with sqlite3.connect(self.db_path) as conn:
+        with self.connessione() as conn:
             conn.execute("INSERT INTO Specializzazione (nome, dettagli) VALUES (?, ?)", ("Cardiologia", "Cuore"))
             id_specializzazione = conn.execute("SELECT id FROM Specializzazione").fetchone()[0]
             conn.execute(
@@ -151,7 +151,7 @@ class TestGestoreAnagrafica(ControllerDatabaseTestCase):
 
     def test_assegna_specializzazione_e_rifiuta_doppioni(self):
         id_medico = self.inserisci_dipendente()
-        with sqlite3.connect(self.db_path) as conn:
+        with self.connessione() as conn:
             cursor = conn.execute(
                 "INSERT INTO Specializzazione (nome, dettagli) VALUES (?, ?)",
                 ("Neurologia", "Sistema nervoso"),
@@ -232,7 +232,7 @@ class TestGestoreAnagrafica(ControllerDatabaseTestCase):
 
     def test_get_tutte_specializzazioni_e_get_dipendente_by_email(self):
         id_medico = self.inserisci_dipendente()
-        with sqlite3.connect(self.db_path) as conn:
+        with self.connessione() as conn:
             conn.execute("INSERT INTO Specializzazione (nome, dettagli) VALUES (?, ?)", ("Ortopedia", "Ossa"))
 
         self.assertEqual(self.anagrafica.getTutteSpecializzazioni(), [

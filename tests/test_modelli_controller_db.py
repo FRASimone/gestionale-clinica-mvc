@@ -129,11 +129,14 @@ class TestScambioModelliControllerDatabase(unittest.TestCase):
         self.assertEqual(agenda[0]["nome_paziente"], "Mario")
         self.assertEqual(agenda[0]["nomePrestazione"], "Visita di prova")
 
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             riga = conn.execute(
                 "SELECT stato, cf_paziente, id_medico, id_prestazione "
                 "FROM Appuntamento"
             ).fetchone()
+        finally:
+            conn.close()
 
         self.assertEqual(
             riga,
