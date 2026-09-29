@@ -29,7 +29,7 @@ class ReportisticaView(QWidget):
         self.spin_anno_sim.setValue(2026)
         
         self.combo_mese_sim = QComboBox()
-        self.combo_mese_sim.addItem("Tutti i mesi (Annuale)", 0) # <-- OPZIONE ANNUALE AGGIUNTA
+        self.combo_mese_sim.addItem("Tutti i mesi (Annuale)", 0) # <-- OPZIONE ANNUALE 
         for m in range(1, 13):
             self.combo_mese_sim.addItem(f"Mese {m}", m)
             
@@ -40,6 +40,7 @@ class ReportisticaView(QWidget):
 
         btn_simula = QPushButton("Esegui Batch Mese/Anno") # <-- TESTO BOTTONE AGGIORNATO
         btn_simula.setStyleSheet("background-color: #8E44AD; color: white; font-weight: bold;")
+        #bottone che quando premuto chiama il metodo della view simula_scatto
         btn_simula.clicked.connect(self.simula_scatto_tempo)
         layout_tempo.addWidget(btn_simula)
         
@@ -47,7 +48,7 @@ class ReportisticaView(QWidget):
         layout.addWidget(group_tempo)
 
 
-        # --- SEZIONE 2: Archivio e Ricerca (Attore: Amministratore) ---
+        # --- SEZIONE 2: Archivio e Ricerca ---
         group_ricerca = QGroupBox("Archivio Report Generati")
         layout_ricerca_main = QVBoxLayout()
         
