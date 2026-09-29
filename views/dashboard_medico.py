@@ -8,10 +8,11 @@ from views.agenda_medico_view import AgendaMedicoView
 from views.ricerca_pazienti_view import RicercaPazientiView
 
 class DashboardMedico(QWidget):
-    def __init__(self, id_medico: int = 1, nome_medico: str = "Rossi"):
+    def __init__(self, id_medico: int = 1, nome_medico: str = "Rossi", on_logout=None):
         super().__init__()
         self.id_medico = id_medico
         self.nome_medico = nome_medico
+        self.on_logout = on_logout
         
         self.setWindowTitle(f"Gestionale Clinica - Area Medica")
         self.resize(1000, 700)
@@ -77,6 +78,8 @@ class DashboardMedico(QWidget):
         )
         
         if risposta == QMessageBox.StandardButton.Yes:
+            if self.on_logout:
+                self.on_logout()
             self.close()
             print(f"--- [SISTEMA] Sessione terminata per il Dott. {self.nome_medico} ---")
 
