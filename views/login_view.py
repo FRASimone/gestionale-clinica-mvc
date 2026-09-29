@@ -82,18 +82,23 @@ class LoginWindow(QWidget):
             
             # --- APRIAMO LA DASHBOARD CORRETTA ---
             if ruolo == "Medico":
-                self.dashboard = DashboardMedico(id_medico=utente_loggato.getId(), nome_medico=utente_loggato.getCognome())
+                self.dashboard = DashboardMedico(
+                    id_medico=utente_loggato.getId(),
+                    nome_medico=utente_loggato.getCognome(),
+                    on_logout=self.show
+                )
             elif ruolo == "Segretario":
-                self.dashboard = DashboardSegreteria(utente_loggato=utente_loggato)
+                self.dashboard = DashboardSegreteria(utente_loggato=utente_loggato, on_logout=self.show)
             elif ruolo == "Amministratore":
                 nome_completo = f"{utente_loggato.getNome()} {utente_loggato.getCognome()}"
                 self.dashboard = DashboardAmministratore(
                     id_admin=utente_loggato.getId(),
-                    nome_admin=nome_completo
+                    nome_admin=nome_completo,
+                    on_logout=self.show
                 )
-            # mostra la dashboard e chiude il login
+            # Nasconde il login finché la sessione è attiva.
             self.dashboard.show()
-            self.close()
+            self.hide()
 
         elif stato == "utente_inesistente":
             QMessageBox.critical(self, "Errore di Autenticazione", "Nessun dipendente trovato con questa email.")

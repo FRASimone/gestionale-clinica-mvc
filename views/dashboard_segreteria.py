@@ -15,9 +15,10 @@ from views.gestione_amministrativa_view import GestioneAmministrativaView
 from views.gestione_appuntamenti_segreteria_view import GestioneAppuntamentiSegreteriaView
 
 class DashboardSegreteria(QWidget):
-    def __init__(self, utente_loggato):
+    def __init__(self, utente_loggato, on_logout=None):
         super().__init__()
         self.utente_loggato = utente_loggato # Riceviamo l'oggetto del dipendente dal login
+        self.on_logout = on_logout
         self.gestore = GestoreAnagrafica() # Istanziamo il nostro "motore"
         self.gestore_clinica = GestoreClinica()
         
@@ -94,6 +95,8 @@ class DashboardSegreteria(QWidget):
         )
         
         if risposta == QMessageBox.StandardButton.Yes:
+            if self.on_logout:
+                self.on_logout()
             self.close()
             print(f"--- [SISTEMA] Disconnessione effettuata per: {self.utente_loggato.getInfo()} ---")
             

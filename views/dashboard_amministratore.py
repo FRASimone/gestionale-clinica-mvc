@@ -9,10 +9,11 @@ from views.registrazione_dipendente import RegistrazioneDipendenteView
 from views.gestione_ruoli_view import GestioneRuoliView
 
 class DashboardAmministratore(QWidget):
-    def __init__(self, id_admin: int, nome_admin="Amministratore"):
+    def __init__(self, id_admin: int, nome_admin="Amministratore", on_logout=None):
         super().__init__()
         self.id_admin = id_admin
         self.nome_admin = nome_admin
+        self.on_logout = on_logout
         
         self.setWindowTitle(f"Gestionale Clinica - Pannello Amministrazione")
         self.resize(1000, 700)
@@ -63,6 +64,8 @@ class DashboardAmministratore(QWidget):
         )
         
         if risposta == QMessageBox.StandardButton.Yes:
+            if self.on_logout:
+                self.on_logout()
             self.close()
             # Qui potresti reinizializzare e mostrare la LoginView originaria
             print("--- [SISTEMA] Disconnessione Amministratore effettuata ---")
