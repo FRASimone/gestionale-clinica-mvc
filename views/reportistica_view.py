@@ -95,11 +95,11 @@ class ReportisticaView(QWidget):
 
         # --- SEZIONE 3: Azioni (Visualizza / Esporta) ---
         layout_azioni = QHBoxLayout()
-        
+        #bottone per visualizzare
         btn_visualizza = QPushButton("Visualizza Dettagli")
         btn_visualizza.clicked.connect(self.visualizza_dettagli)
         layout_azioni.addWidget(btn_visualizza)
-        
+        #bottone esporta dati che chiama il metodo della view esporta_dati
         btn_esporta = QPushButton("Esporta in PDF")
         btn_esporta.setStyleSheet("background-color: #C0392B; color: white;")
         btn_esporta.clicked.connect(lambda: self.esporta_dati("PDF"))
@@ -116,11 +116,13 @@ class ReportisticaView(QWidget):
 
     def simula_scatto_tempo(self):
         """Metodo che simula l'innesco automatico dei report."""
+        #catturano le scelte fatte nell interfaccia grafica
         anno = self.spin_anno_sim.value()
         mese = self.combo_mese_sim.currentData()
 
+        #chiamata al metodo del controller reportistica che genera tutti 
         successo = self.gestore.generaReportMensiliAutomatici(anno, mese)
-
+        #se con successo sono riuscito a generare e salvare allora li ritorno alla view
         if successo:
             # Testo dinamico per il pop-up
             periodo = f"il mese {mese}/{anno}" if mese > 0 else f"l'intero anno {anno}"
@@ -130,12 +132,16 @@ class ReportisticaView(QWidget):
             QMessageBox.critical(self, "Errore", "Si è verificato un errore nell'elaborazione automatica.")
     
     def ricerca_report(self):
+        #metodo che serve ad ottenere la lista dei report e mostrarla a schermo
         tipo = self.combo_tipo_filtro.currentText()
         anno = self.combo_anno_filtro.currentData()
         mese = self.combo_mese_filtro.currentData()
 
+        #chiamata al metodo del controller, invia i parametri filtro selezionati
+        # e restituisce i report trovati
         risultati = self.gestore.getListaReport(anno, mese, tipo)
-        
+
+        #popola la view con i report trovati
         self.tabella_report.setRowCount(0)
         for riga, rep in enumerate(risultati):
             self.tabella_report.insertRow(riga)
@@ -154,23 +160,29 @@ class ReportisticaView(QWidget):
         return int(self.tabella_report.item(riga, 0).text())
 
     def visualizza_dettagli(self):
+        # Chiama un metodo di supporto della View per capire quale riga della tabella è stata cliccata
         id_report = self.get_id_selezionato()
         if not id_report: return
-        
+        # Passa l'ID al gestore, che farà la query SELECT per ID # e restituirà un dizionario completo con tutti i dati.
         report_data = self.gestore.visualizzaReport(id_report)
         if report_data:
+            # 3. Costruzione dell'intestazione del pop-up
             testo = f"--- DETTAGLI REPORT (ID {report_data['id']}) ---\n"
             testo += f"Tipo: {report_data['tipoReport']}\n"
             testo += f"Periodo: Anno {report_data['annoRiferimento']} "
+            # Se c'è un mese, lo aggiunge alla stringa, altrimenti lascia solo l'anno (report annuale)
             if report_data['meseRiferimento']: testo += f"- Mese {report_data['meseRiferimento']}"
             testo += "\n\n--- DATI AGGREGATI ---\n"
             
             for chiave, valore in report_data['datiAggregati'].items():
+                # Se è un dato finanziario, formatta il numero con due cifre decimali (:.2f) 
+                # e aggiunge il simbolo dell'Euro.
                 if "Fatturato" in report_data['tipoReport']:
                     testo += f"{chiave}: {valore:.2f} €\n"
                 else:
+                    # Se è un report di pazienti o prestazioni, stampa il numero così com'è (intero).
                     testo += f"{chiave}: {valore}\n"
-
+            # Apre la finestra di dialogo nativa di PyQt6 mostrando tutto il testo appena costruito.
             QMessageBox.information(self, "Dettagli Report", testo)
 
     def esporta_dati(self, formato: str):

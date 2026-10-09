@@ -8,18 +8,9 @@ class CartellaClinica:
         self.__id = id_cartella
         self.__dataCreazione = dataCreazione
         self.__anamnesiGenerica = anamnesiGenerica
-        self.__valutazioni = [] # Inizializza una lista vuota
 
     def aggiornaAnamnesi(self, nuova_anamnesi: str) -> None:
         self.__anamnesiGenerica = nuova_anamnesi
-
-    def aggiungiValutazione(self, valutazione: ValutazioneFunzionale) -> None:
-        """Aggiunge un oggetto ValutazioneFunzionale alla lista della cartella."""
-        self.__valutazioni.append(valutazione)
-
-    # --- Getters ---
-    def getValutazioni(self) -> list:
-        return self.__valutazioni
 
     def getId(self) -> int:
         return self.__id

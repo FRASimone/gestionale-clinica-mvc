@@ -66,14 +66,14 @@ class GestoreReportistica:
             conn.close()
 
     def generaReportFatturatoGlobale(self, anno: int, mese: int = 0) -> Report:
-        """RF20: Calcola il fatturato totale generato dalle fatture emesse."""
+        """RF21: Calcola il fatturato totale generato dalle fatture emesse."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
-            
+            #viene sommato 
             query = "SELECT SUM(totale) as incasso_totale FROM Fattura WHERE strftime('%Y', dataOraEmissione) = ?"
             params = [str(anno)]
-            
+            #aggiunta del filtro mese se inserito
             if mese > 0:
                 query += " AND strftime('%m', dataOraEmissione) = ?"
                 params.append(f"{mese:02d}")
@@ -83,8 +83,10 @@ class GestoreReportistica:
             
             # Se non ci sono fatture, SUM restituisce None. Lo gestiamo forzando a 0.0
             totale = risultato['incasso_totale'] if risultato['incasso_totale'] else 0.0
-            
+            # dizionario con i dati calcolati
             dati = {"fatturato_globale": totale}
+            # Deleghiamo a una funzione di supporto il compito di convertire il dizionario in JSON
+            # e salvarlo come nuovo record nella tabella Report del database.
             report = self._salva_e_crea_oggetto(cursor, anno, mese, "Fatturato Globale", dati)
             
             conn.commit()
@@ -93,11 +95,11 @@ class GestoreReportistica:
             conn.close()
     
     def generaReportFatturatoPrestazione(self, anno: int, mese: int = 0) -> Report:
-        """RF21: Fatturato suddiviso per singola prestazione."""
+        """RF22: Fatturato suddiviso per singola prestazione."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
-            
+            #query per recuperare informazioni sul id prestazione, nome e totale partendo dalla fattura
             query = """
                 SELECT Pr.nomePrestazione, SUM(F.totale) as totale_prestazione
                 FROM Fattura F
@@ -111,7 +113,7 @@ class GestoreReportistica:
             if mese > 0:
                 query += " AND strftime('%m', F.dataOraEmissione) = ?"
                 params.append(f"{mese:02d}")
-                
+            #raggruppato per tipologia di prestazione
             query += " GROUP BY Pr.id"
     
             cursor.execute(query, params)
@@ -126,7 +128,7 @@ class GestoreReportistica:
             conn.close()
 
     def generaReportFatturatoMedico(self, anno: int, mese: int = 0) -> Report:
-        """RF22: Suddivide il fatturato in base al medico che ha erogato la prestazione."""
+        """RF23: Suddivide il fatturato in base al medico che ha erogato la prestazione."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
@@ -163,7 +165,7 @@ class GestoreReportistica:
             conn.close()
     
     def generaReportStatisticoPrestazioni(self, anno: int, mese: int = 0) -> Report:
-        """RF23: Statistica (conteggio) delle prestazioni erogate."""
+        """RF24: Statistica (conteggio) delle prestazioni erogate."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()

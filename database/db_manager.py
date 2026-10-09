@@ -173,16 +173,28 @@ def inizializza_database():
         
 #il backup funzionerà sempre, indipendentemente da dove esegui lo script.        
 def esegui_backup_automatico():
-    # Usiamo il DB_PATH assoluto
+    # Recupero del percorso del database clinica
+    # Usa la variabile globale DB_PATH che contiene l'indirizzo assoluto del file .db
     global DB_PATH 
-    
+    #esegue il backup solo se il file del database esiste fisicamente,
+    # evitando che il programma vada in crash all'avvio se il file non è ancora stato creato.
     if os.path.exists(DB_PATH):
-        # Creiamo la cartella backups esattamente dove si trova il file di origine (dentro 'database')
+
+        # Creazione del percorso per la cartella dei backup
+        # os.path.dirname estrae solo la cartella in cui si trova il file .db
+        # os.path.join unisce quel percorso alla stringa "backups", creando la destinazione finale.
         backup_dir = os.path.join(os.path.dirname(DB_PATH), "backups")
+
+        # Creazione fisica della cartella
+        # makedirs crea la cartella.
         os.makedirs(backup_dir, exist_ok=True)
-        
+
+        #crea il nome inserendo anche la data
         data_str = datetime.now().strftime("%Y%m%d")
         nome_backup = f"backup_clinica_{data_str}.db"
+        # Esecuzione della copia fisica
+        # shutil.copy prende il file originale (DB_PATH) e lo clona all'interno 
+        # della cartella di backup assegnandogli il nuovo nome appena generato.
         shutil.copy(DB_PATH, os.path.join(backup_dir, nome_backup))
         print(f"--- [SISTEMA] Backup giornaliero eseguito in: {backup_dir} ---")
 
